@@ -166,6 +166,79 @@ async def pass_detail(pass_id: str) -> dict:
     return payload
 
 
+@app.get("/v1/map")
+async def map_data() -> dict:
+    """Everything plottable in one payload: controls, closures, incidents,
+    webcams, passes, resorts. Point data only - the client draws the map."""
+    from chaincheck.feeds.resorts import RESORT_COORDS
+
+    st = _state()
+    snapshot, cams, resort_reports = await asyncio.gather(
+        st.roads.snapshot(), st.roads.webcams(), st.resorts.all_reports()
+    )
+
+    controls = []
+    closures = []
+    incidents = []
+    for roads in snapshot.corridors.values():
+        for c in roads.controls:
+            payload = serialize.control_dict(c)
+            payload["corridor_id"] = roads.corridor.id
+            controls.append(payload)
+        for c in roads.closures:
+            payload = serialize.closure_dict(c)
+            payload["corridor_id"] = roads.corridor.id
+            closures.append(payload)
+        for i in roads.incidents:
+            payload = serialize.incident_dict(i)
+            payload["corridor_id"] = roads.corridor.id
+            incidents.append(payload)
+
+    return {
+        "controls": controls,
+        "closures": closures,
+        "incidents": incidents,
+        "webcams": [
+            {
+                "id": w.id,
+                "name": w.name,
+                "route": w.route,
+                "direction": w.direction,
+                "nearby": w.nearby,
+                "lat": w.lat,
+                "lon": w.lon,
+                "image_url": w.image_url,
+            }
+            for w in cams.webcams
+        ],
+        "webcams_attribution": "Camera images: Caltrans",
+        "passes": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "route": p.route,
+                "state": p.state,
+                "elevation_ft": p.elevation_ft,
+                "corridor_id": p.corridor_id,
+                "lat": p.lat,
+                "lon": p.lon,
+            }
+            for p in PASSES
+        ],
+        "resorts": [
+            {
+                **serialize.resort_dict(r),
+                "lat": RESORT_COORDS[r.resort_id][0],
+                "lon": RESORT_COORDS[r.resort_id][1],
+            }
+            for r in resort_reports
+            if r.resort_id in RESORT_COORDS
+        ],
+        "feed": serialize.snapshot_health(snapshot),
+        "disclaimer": DISCLAIMER,
+    }
+
+
 @app.get("/v1/resorts")
 async def resorts() -> dict:
     reports = await _state().resorts.all_reports()

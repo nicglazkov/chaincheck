@@ -195,3 +195,92 @@ data class TripBriefAnswer(
     val stale: Boolean = false,
     val disclaimer: String = "",
 )
+
+@Serializable
+data class MapControl(
+    val route: String = "",
+    val direction: String = "",
+    val location: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+    val tier: Int = -1,
+    @SerialName("tier_label") val tierLabel: String = "",
+    val status: String = "",
+    @SerialName("corridor_id") val corridorId: String = "",
+)
+
+@Serializable
+data class LatLonPoint(val lat: Double = 0.0, val lon: Double = 0.0)
+
+@Serializable
+data class MapClosure(
+    val route: String = "",
+    val direction: String = "",
+    val location: String = "",
+    val type: String = "",
+    val work: String = "",
+    @SerialName("delay_minutes") val delayMinutes: Int? = null,
+    val begin: LatLonPoint = LatLonPoint(),
+    val end: LatLonPoint = LatLonPoint(),
+    @SerialName("corridor_id") val corridorId: String = "",
+)
+
+@Serializable
+data class MapIncident(
+    val id: String = "",
+    val type: String = "",
+    val location: String = "",
+    val area: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+    @SerialName("corridor_id") val corridorId: String = "",
+)
+
+@Serializable
+data class MapWebcam(
+    val id: String = "",
+    val name: String = "",
+    val route: String = "",
+    val direction: String = "",
+    val nearby: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+    @SerialName("image_url") val imageUrl: String = "",
+)
+
+@Serializable
+data class MapPass(
+    val id: String = "",
+    val name: String = "",
+    val route: String = "",
+    val state: String = "",
+    @SerialName("elevation_ft") val elevationFt: Int = 0,
+    @SerialName("corridor_id") val corridorId: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+)
+
+@Serializable
+data class MapResort(
+    val id: String = "",
+    val name: String = "",
+    @SerialName("snow_24h_in") val snow24hIn: Double? = null,
+    @SerialName("base_depth_in") val baseDepthIn: Double? = null,
+    @SerialName("lifts_open") val liftsOpen: Int? = null,
+    @SerialName("lifts_total") val liftsTotal: Int? = null,
+    val ok: Boolean = true,
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+)
+
+@Serializable
+data class MapData(
+    val controls: List<MapControl> = emptyList(),
+    val closures: List<MapClosure> = emptyList(),
+    val incidents: List<MapIncident> = emptyList(),
+    val webcams: List<MapWebcam> = emptyList(),
+    @SerialName("webcams_attribution") val webcamsAttribution: String = "",
+    val passes: List<MapPass> = emptyList(),
+    val resorts: List<MapResort> = emptyList(),
+    val feed: FeedHealth = FeedHealth(),
+)

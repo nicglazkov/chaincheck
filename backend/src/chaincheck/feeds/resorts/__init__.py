@@ -27,6 +27,21 @@ from chaincheck.feeds.resorts.vail import heavenly, kirkwood, northstar
 TTL_SECONDS = 30 * 60
 MAX_SERVE_SECONDS = 12 * 60 * 60
 
+# Base-area coordinates for the map (static; not worth an adapter field).
+RESORT_COORDS: dict[str, tuple[float, float]] = {
+    "palisades": (39.1969, -120.2358),
+    "heavenly": (38.9351, -119.9400),
+    "northstar": (39.2746, -120.1211),
+    "kirkwood": (38.6850, -120.0654),
+    "sugarbowl": (39.3043, -120.3336),
+    "sierra": (38.7990, -120.0803),
+    "homewood": (39.0857, -120.1600),
+    "diamondpeak": (39.2542, -119.9218),
+    "mtrose": (39.3287, -119.8854),
+    "boreal": (39.3365, -120.3499),
+    "donner": (39.3172, -120.3306),
+}
+
 
 def all_adapters() -> list[ResortAdapter]:
     return [

@@ -40,6 +40,9 @@ class ChainCheckApi(private val client: HttpClient = defaultClient()) {
     suspend fun resorts(): ResortsResponse =
         client.get("${ApiConfig.baseUrl}/v1/resorts").body()
 
+    suspend fun mapData(): MapData =
+        client.get("${ApiConfig.baseUrl}/v1/map").body()
+
     suspend fun evaluateRules(query: RulesQuery): RulesAnswer =
         client.post("${ApiConfig.baseUrl}/v1/rules/evaluate") {
             contentType(ContentType.Application.Json)

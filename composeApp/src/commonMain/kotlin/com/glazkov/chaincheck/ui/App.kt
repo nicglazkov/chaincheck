@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material3.AlertDialog
@@ -24,6 +25,7 @@ import com.glazkov.chaincheck.data.Repository
 
 enum class Tab(val label: String) {
     Home("Home"),
+    Map("Map"),
     Routes("Routes"),
     Resorts("Resorts"),
     Brief("Brief"),
@@ -71,6 +73,7 @@ fun App(repository: Repository) {
                                 Icon(
                                     when (item) {
                                         Tab.Home -> Icons.Filled.Home
+                                        Tab.Map -> Icons.Filled.Map
                                         Tab.Routes -> Icons.Filled.Route
                                         Tab.Resorts -> Icons.Filled.AcUnit
                                         Tab.Brief -> Icons.AutoMirrored.Filled.Article
@@ -106,6 +109,7 @@ fun App(repository: Repository) {
                     modifier = modifier,
                 )
 
+                tab == Tab.Map -> MapScreen(repository, modifier)
                 tab == Tab.Resorts -> ResortsScreen(repository, modifier)
                 tab == Tab.Brief -> BriefScreen(repository, modifier)
                 else -> AlertsScreen(repository, modifier)

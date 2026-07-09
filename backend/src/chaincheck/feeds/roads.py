@@ -67,6 +67,18 @@ class SierraRoads:
     async def aclose(self) -> None:
         await self._roads.aclose()
 
+    async def webcams(self):
+        """Sierra roadside cameras (official snapshot URLs, attributed)."""
+        from chaincheck.feeds import webcams as webcams_mod
+
+        result = await self._roads.cameras(districts=corridors.SIERRA_DISTRICTS)
+        return webcams_mod.WebcamsResult(
+            webcams=webcams_mod.sierra_webcams(result.records) if result.ok else [],
+            data_as_of=result.data_as_of,
+            ok=result.ok,
+            stale=result.stale,
+        )
+
     async def snapshot(self) -> SierraSnapshot:
         by_id = {c.id: CorridorRoads(corridor=c) for c in corridors.CORRIDORS}
         notes: list[str] = []
