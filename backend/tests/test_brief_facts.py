@@ -190,6 +190,23 @@ def test_validator_allows_tier_tokens_present_in_facts():
     assert any("R3" in p for p in validate.problems(invented, facts))
 
 
+def test_validator_tolerates_slash_reformatting():
+    from chaincheck.brief import validate
+
+    assert validate._mentions(
+        "closures at five mile rd/paul bunyon rd and sly park rd.",
+        "Five Mile Rd / Paul Bunyon Rd",
+    )
+    assert validate._mentions(
+        "work at paul bunyon rd and at five mile rd today.",
+        "Five Mile Rd / Paul Bunyon Rd",
+    )
+    assert not validate._mentions(
+        "closures at sly park rd only.",
+        "Five Mile Rd / Paul Bunyon Rd",
+    )
+
+
 def test_quiet_day_renders_r0():
     snapshot = snapshot_with({"us50": Tier.R0})
     facts = brief_facts.assemble(
