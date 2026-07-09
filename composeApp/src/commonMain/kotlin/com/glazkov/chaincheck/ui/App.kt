@@ -2,6 +2,7 @@ package com.glazkov.chaincheck.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
@@ -25,6 +26,7 @@ enum class Tab(val label: String) {
     Home("Home"),
     Routes("Routes"),
     Resorts("Resorts"),
+    Brief("Brief"),
     Alerts("Alerts"),
 }
 
@@ -71,6 +73,7 @@ fun App(repository: Repository) {
                                         Tab.Home -> Icons.Filled.Home
                                         Tab.Routes -> Icons.Filled.Route
                                         Tab.Resorts -> Icons.Filled.AcUnit
+                                        Tab.Brief -> Icons.AutoMirrored.Filled.Article
                                         Tab.Alerts -> Icons.Filled.Notifications
                                     },
                                     contentDescription = item.label,
@@ -104,6 +107,7 @@ fun App(repository: Repository) {
                 )
 
                 tab == Tab.Resorts -> ResortsScreen(repository, modifier)
+                tab == Tab.Brief -> BriefScreen(repository, modifier)
                 else -> AlertsScreen(repository, modifier)
             }
         }

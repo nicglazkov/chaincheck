@@ -46,6 +46,12 @@ class ChainCheckApi(private val client: HttpClient = defaultClient()) {
             setBody(query)
         }.body()
 
+    suspend fun tripBrief(query: TripBriefQuery): TripBriefAnswer =
+        client.post("${ApiConfig.baseUrl}/v1/tripbrief") {
+            contentType(ContentType.Application.Json)
+            setBody(query)
+        }.body()
+
     suspend fun saveSubscription(token: String, corridorIds: List<String>) {
         client.put("${ApiConfig.baseUrl}/v1/subscriptions") {
             contentType(ContentType.Application.Json)
