@@ -46,6 +46,10 @@ class TripFacts:
 
 DRIVE_WINDOW_HOURS = 4  # Sacramento-to-Tahoe scale drive
 
+# The brief names at most this many closures; the model only sees (and
+# validation only requires) these, plus an honest "...and N more" tail.
+CLOSURE_MENTION_CAP = 5
+
 
 def assemble(
     corridor_id: str,
@@ -140,7 +144,10 @@ def render_plain(facts: TripFacts) -> str:
         lines.extend(f"- {c}" for c in facts.active_controls)
     if facts.closures:
         lines.append(f"Closures ({len(facts.closures)}):")
-        lines.extend(f"- {c}" for c in facts.closures[:5])
+        lines.extend(f"- {c}" for c in facts.closures[:CLOSURE_MENTION_CAP])
+        remaining = len(facts.closures) - CLOSURE_MENTION_CAP
+        if remaining > 0:
+            lines.append(f"- ...and {remaining} more closures")
     if facts.alerts:
         lines.append("Weather alerts: " + "; ".join(facts.alerts))
     if facts.forecast_window:

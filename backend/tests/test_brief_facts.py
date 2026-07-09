@@ -136,6 +136,60 @@ def test_render_plain_never_promises_safety():
         assert banned not in text
 
 
+def test_many_closures_capped_with_honest_tail():
+    from ca_roads.models import LaneClosure
+
+    from chaincheck.brief import validate
+
+    snapshot = snapshot_with({"i80": Tier.R0})
+    for i in range(8):
+        snapshot.corridors["i80"].closures.append(
+            LaneClosure(
+                index=f"C{i}", district=3, route="80", county="Placer",
+                direction="East", location_name=f"Closure Site {i}",
+                nearby_place="", type_of_closure="Lane", facility="",
+                type_of_work="work", lanes_closed="1", total_lanes=2,
+                estimated_delay_minutes=None, duration="", begin_lat=39.3,
+                begin_lon=-120.4, end_lat=39.31, end_lon=-120.39,
+                begin_milepost=None, end_milepost=None, start_epoch=0,
+                end_epoch=0, indefinite_end=False, is_1097=True,
+                is_1098=False, is_1022=False, epoch_1097=0,
+            )
+        )
+    facts = brief_facts.assemble(
+        corridor_id="i80", origin="Sacramento", departure=DEPARTURE,
+        snapshot=snapshot, forecast=None, outlook=None, vehicle=None, now=NOW,
+    )
+    text = brief_facts.render_plain(facts)
+    assert "and 3 more closures" in text
+    # The plain rendering itself must pass validation: it names exactly the
+    # capped set, no more.
+    assert validate.problems(text, facts) == []
+    # A narration that names only what it was shown also passes.
+    shown = text  # same capped content
+    assert validate.problems(shown, facts) == []
+
+
+def test_validator_allows_tier_tokens_present_in_facts():
+    from chaincheck.brief import validate
+
+    snapshot = snapshot_with({"i80": Tier.R2})
+    snapshot.corridors["i80"].controls.append(make_control("R-2", "Kingvale"))
+    snapshot.corridors["i80"].controls.append(make_control("R-1", "Baxter"))
+    facts = brief_facts.assemble(
+        corridor_id="i80", origin="Sacramento", departure=DEPARTURE,
+        snapshot=snapshot, forecast=None, outlook=None, vehicle=None, now=NOW,
+    )
+    text = (
+        "Leaving Sacramento on I-80: R2 is in effect. Kingvale (East) reads R-2 "
+        "and Baxter (East) reads R1. Verify before driving: 511 or quickmap.dot.ca.gov."
+    )
+    assert validate.problems(text, facts) == []
+    # R3 appears nowhere in the facts: still flagged.
+    invented = text + " It may go to R3 later."
+    assert any("R3" in p for p in validate.problems(invented, facts))
+
+
 def test_quiet_day_renders_r0():
     snapshot = snapshot_with({"us50": Tier.R0})
     facts = brief_facts.assemble(
