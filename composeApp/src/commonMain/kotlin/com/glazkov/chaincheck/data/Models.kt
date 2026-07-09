@@ -51,6 +51,8 @@ data class ClosureItem(
     @SerialName("lanes_closed") val lanesClosed: String = "",
     @SerialName("total_lanes") val totalLanes: Int? = null,
     @SerialName("delay_minutes") val delayMinutes: Int? = null,
+    val begin: LatLonPoint = LatLonPoint(),
+    val end: LatLonPoint = LatLonPoint(),
 )
 
 @Serializable
@@ -59,6 +61,8 @@ data class IncidentItem(
     val type: String = "",
     val location: String = "",
     val area: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
     @SerialName("reported_at") val reportedAt: String? = null,
 )
 
@@ -108,6 +112,8 @@ data class PassSummary(
     val state: String = "CA",
     @SerialName("elevation_ft") val elevationFt: Int = 0,
     @SerialName("corridor_id") val corridorId: String = "",
+    val lat: Double? = null,
+    val lon: Double? = null,
     val alerts: List<AlertInfo> = emptyList(),
     @SerialName("forecast_ok") val forecastOk: Boolean = true,
     @SerialName("forecast_stale") val forecastStale: Boolean = false,
@@ -145,6 +151,8 @@ data class ResortReport(
     val stale: Boolean = false,
     val error: String? = null,
     val notes: List<String> = emptyList(),
+    val lat: Double? = null,
+    val lon: Double? = null,
 )
 
 @Serializable

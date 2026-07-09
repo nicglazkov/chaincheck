@@ -50,7 +50,13 @@ fun App(repository: Repository) {
     ChainCheckTheme {
         var tab by remember { mutableStateOf(Tab.Home) }
         var openCorridor by remember { mutableStateOf<String?>(null) }
+        var mapFocus by remember { mutableStateOf<MapFocus?>(null) }
         var disclaimerSeen by remember { mutableStateOf(repository.disclaimerAccepted) }
+        val showOnMap: (MapFocus) -> Unit = {
+            mapFocus = it
+            openCorridor = null
+            tab = Tab.Map
+        }
 
         if (!disclaimerSeen) {
             AlertDialog(
@@ -110,23 +116,26 @@ fun App(repository: Repository) {
                     corridorId = openCorridor!!,
                     repository = repository,
                     onBack = { openCorridor = null },
+                    onShowOnMap = showOnMap,
                     modifier = modifier,
                 )
 
                 tab == Tab.Home -> HomeScreen(
                     repository = repository,
                     onOpenRoute = { openCorridor = it },
+                    onShowOnMap = showOnMap,
                     modifier = modifier,
                 )
 
                 tab == Tab.Routes -> RoutesScreen(
                     repository = repository,
                     onOpenRoute = { openCorridor = it },
+                    onShowOnMap = showOnMap,
                     modifier = modifier,
                 )
 
-                tab == Tab.Map -> MapScreen(repository, modifier)
-                tab == Tab.Resorts -> ResortsScreen(repository, modifier)
+                tab == Tab.Map -> MapScreen(repository, mapFocus, modifier)
+                tab == Tab.Resorts -> ResortsScreen(repository, showOnMap, modifier)
                 tab == Tab.Brief -> BriefScreen(repository, modifier)
                 else -> AlertsScreen(repository, modifier)
             }
