@@ -283,6 +283,7 @@ data class MapResort(
 
 @Serializable
 data class MapData(
+    val corridors: List<MapCorridorLine> = emptyList(),
     val controls: List<MapControl> = emptyList(),
     val closures: List<MapClosure> = emptyList(),
     val incidents: List<MapIncident> = emptyList(),
@@ -291,4 +292,14 @@ data class MapData(
     val passes: List<MapPass> = emptyList(),
     val resorts: List<MapResort> = emptyList(),
     val feed: FeedHealth = FeedHealth(),
+)
+
+@Serializable
+data class MapCorridorLine(
+    val id: String = "",
+    val route: String = "",
+    val name: String = "",
+    val tier: Int = -1,
+    @SerialName("tier_label") val tierLabel: String = "",
+    val segments: List<List<LatLonPoint>> = emptyList(),
 )

@@ -124,6 +124,7 @@ fun App(repository: Repository) {
                     repository = repository,
                     onOpenRoute = { openCorridor = it },
                     onShowOnMap = showOnMap,
+                    onQuickNav = { tab = it },
                     modifier = modifier,
                 )
 

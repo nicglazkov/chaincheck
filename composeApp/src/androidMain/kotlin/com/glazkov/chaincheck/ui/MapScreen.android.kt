@@ -39,20 +39,26 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 
 private val TAHOE_CENTER = LatLng(39.09, -120.25)
 
-/** Small anti-aliased dot with a contrast ring - the quiet marker language. */
-private fun dotDescriptor(fill: Int, ring: Int, sizePx: Int): BitmapDescriptor {
-    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+/**
+ * Anti-aliased ringed dot centered in a larger transparent bitmap: the
+ * visible mark stays quiet while the tap target is glove-sized (the marker
+ * hit area is the full bitmap bounds).
+ */
+private fun dotDescriptor(fill: Int, ring: Int, dotPx: Int, hitPx: Int): BitmapDescriptor {
+    val bitmap = Bitmap.createBitmap(hitPx, hitPx, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    val center = sizePx / 2f
+    val center = hitPx / 2f
+    val radius = dotPx / 2f
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     paint.color = ring
-    canvas.drawCircle(center, center, center, paint)
+    canvas.drawCircle(center, center, radius, paint)
     paint.color = fill
-    canvas.drawCircle(center, center, center - sizePx * 0.16f, paint)
+    canvas.drawCircle(center, center, radius - dotPx * 0.16f, paint)
     return BitmapDescriptorFactory.fromBitmap(bitmap)
 }
 
@@ -103,13 +109,30 @@ actual fun PlatformMap(
         // SDK initialized, which GoogleMap guarantees for its children.
         val ringColor = if (palette.isDark) 0xFF0E1726.toInt() else 0xFFFFFFFF.toInt()
         val webcamDot = remember(palette.isDark) {
-            dotDescriptor(0xFF4DA8C7.toInt(), ringColor, 34)
+            dotDescriptor(0xFF4DA8C7.toInt(), ringColor, dotPx = 44, hitPx = 120)
         }
         val closureDot = remember(palette.isDark) {
-            dotDescriptor(0xFFE8930A.toInt(), ringColor, 38)
+            dotDescriptor(0xFFE8930A.toInt(), ringColor, dotPx = 48, hitPx = 120)
         }
         val incidentDot = remember(palette.isDark) {
-            dotDescriptor(0xFFE03131.toInt(), ringColor, 38)
+            dotDescriptor(0xFFE03131.toInt(), ringColor, dotPx = 48, hitPx = 120)
+        }
+
+        // Corridor highways drawn as tier-colored lines: the road itself
+        // answers "which line is my route, and is it clear".
+        data.corridors.forEach { corridor ->
+            val lineColor = TierColors.forTier(corridor.tier, palette)
+            corridor.segments.forEach { segment ->
+                if (segment.size >= 2) {
+                    Polyline(
+                        points = segment.map { LatLng(it.lat, it.lon) },
+                        color = lineColor.copy(alpha = 0.78f),
+                        width = 16f,
+                        geodesic = true,
+                        zIndex = 1f,
+                    )
+                }
+            }
         }
 
         if (layers.webcams) {

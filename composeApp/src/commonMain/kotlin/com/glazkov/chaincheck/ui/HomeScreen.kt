@@ -37,6 +37,7 @@ fun HomeScreen(
     repository: Repository,
     onOpenRoute: (String) -> Unit,
     onShowOnMap: (MapFocus) -> Unit = {},
+    onQuickNav: (Tab) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by repository.home.collectAsState()
@@ -60,22 +61,44 @@ fun HomeScreen(
             return@Column
         }
 
+        Text(
+            "Where are you headed?",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            summary.corridors.filter { it.id in setOf("i80", "us50", "sr88") }
+            summary.corridors.filter { it.id in DESTINATIONS.keys }
+                .sortedBy { DESTINATIONS.keys.indexOf(it.id) }
                 .forEach { corridor ->
+                    val isSelected = selected == corridor.id
                     FilterChip(
-                        selected = selected == corridor.id,
+                        selected = isSelected,
                         onClick = {
                             selected = corridor.id
                             repository.selectedCorridor = corridor.id
                         },
-                        label = { Text(corridor.route) },
-                        shape = MaterialTheme.shapes.extraLarge,
+                        label = {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(vertical = 6.dp),
+                            ) {
+                                Text(
+                                    DESTINATIONS.getValue(corridor.id),
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    corridor.route,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isSelected)
+                                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                                    else palette.subtleText,
+                                )
+                            }
+                        },
+                        shape = MaterialTheme.shapes.medium,
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = palette.accent,
-                            selectedLabelColor = if (palette.isDark)
-                                MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onPrimary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                         ),
                     )
                 }
@@ -130,6 +153,12 @@ fun HomeScreen(
             summary.passes.firstOrNull { it.corridorId == corridor.id }?.let { pass ->
                 StormCard(pass, onShowOnMap)
             }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            QuickAction("Map", Modifier.weight(1f)) { onQuickNav(Tab.Map) }
+            QuickAction("Trip brief", Modifier.weight(1f)) { onQuickNav(Tab.Brief) }
+            QuickAction("Alerts", Modifier.weight(1f)) { onQuickNav(Tab.Alerts) }
         }
 
         FreshnessLine(
@@ -208,4 +237,26 @@ private fun StatRow(label: String, value: String, valueColor: androidx.compose.u
 fun fmtIn(value: Double): String {
     val rounded = (value * 10).toInt() / 10.0
     return if (rounded == rounded.toInt().toDouble()) "${rounded.toInt()}\"" else "$rounded\""
+}
+
+
+/** Destination-first labels: newcomers know places, veterans know routes. */
+private val DESTINATIONS = linkedMapOf(
+    "i80" to "North Lake",
+    "us50" to "South Lake",
+    "sr88" to "Kirkwood",
+)
+
+@Composable
+private fun QuickAction(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val palette = LocalPalette.current
+    CcCard(modifier.clickable(onClick = onClick)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.titleSmall,
+            color = palette.accent,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+    }
 }
