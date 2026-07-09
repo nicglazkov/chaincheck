@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -137,7 +136,7 @@ private fun RouteSuggestionCard(repository: Repository, modifier: Modifier = Mod
     // Lower tier wins; fewer closures breaks ties. Presented as status, not advice.
     val best = candidates.minByOrNull { it.tier * 100 + it.closures } ?: return
 
-    Card(modifier) {
+    CcCard(modifier) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

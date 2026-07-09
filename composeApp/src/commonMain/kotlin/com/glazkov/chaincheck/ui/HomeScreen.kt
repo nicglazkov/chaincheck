@@ -1,6 +1,5 @@
 package com.glazkov.chaincheck.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,13 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,10 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.glazkov.chaincheck.data.PassSummary
 import com.glazkov.chaincheck.data.Repository
 
@@ -44,6 +39,7 @@ fun HomeScreen(
 ) {
     val state by repository.home.collectAsState()
     var selected by remember { mutableStateOf(repository.selectedCorridor) }
+    val palette = LocalPalette.current
 
     Column(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -62,7 +58,6 @@ fun HomeScreen(
             return@Column
         }
 
-        // Route picker
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             summary.corridors.filter { it.id in setOf("i80", "us50", "sr88") }
                 .forEach { corridor ->
@@ -73,6 +68,13 @@ fun HomeScreen(
                             repository.selectedCorridor = corridor.id
                         },
                         label = { Text(corridor.route) },
+                        shape = MaterialTheme.shapes.extraLarge,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = palette.accent,
+                            selectedLabelColor = if (palette.isDark)
+                                MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onPrimary,
+                        ),
                     )
                 }
         }
@@ -80,45 +82,37 @@ fun HomeScreen(
         val corridor = summary.corridors.firstOrNull { it.id == selected }
             ?: summary.corridors.firstOrNull()
         if (corridor != null) {
-            val color = TierColors.forTier(corridor.tier)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-            ) {
+            CcCard(Modifier.fillMaxWidth()) {
                 Column(
-                    Modifier.fillMaxWidth().padding(20.dp),
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(corridor.name, style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(12.dp))
-                    Column(
-                        modifier = Modifier
-                            .size(140.dp)
-                            .background(color, RoundedCornerShape(70.dp)),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            corridor.tierLabel,
-                            color = Color.White,
-                            fontSize = 44.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(10.dp))
+                    TierRing(tier = corridor.tier, label = corridor.tierLabel)
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         corridor.tierMeaning,
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (corridor.closures > 0 || corridor.incidents > 0) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "${corridor.closures} closures - ${corridor.incidents} incidents",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        Spacer(Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            Text(
+                                "${corridor.closures} closures",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.subtleText,
+                            )
+                            Text(
+                                "${corridor.incidents} incidents",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.subtleText,
+                            )
+                        }
                     }
                     TextButton(onClick = { onOpenRoute(corridor.id) }) {
-                        Text("Route detail")
+                        Text("Route detail", color = palette.accent)
                     }
                 }
             }
@@ -128,8 +122,8 @@ fun HomeScreen(
             }
         }
 
-        FeedHealthLine(
-            asOf = summary.feed.asOf,
+        FreshnessLine(
+            asOfIso = summary.feed.asOf,
             stale = summary.feed.stale || state.fromCache,
             error = state.error,
             onRefresh = { repository.refreshHome() },
@@ -139,16 +133,17 @@ fun HomeScreen(
 
 @Composable
 fun StormCard(pass: PassSummary) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val palette = LocalPalette.current
+    CcCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                "${pass.name} - ${pass.elevationFt} ft",
+                "${pass.name} · ${pass.elevationFt} ft",
                 style = MaterialTheme.typography.titleSmall,
             )
             pass.alerts.firstOrNull()?.let { alert ->
                 Text(
-                    alert.headline.ifBlank { alert.event },
-                    color = TierColors.r2,
+                    "⚠ " + alert.headline.ifBlank { alert.event },
+                    color = palette.r2,
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -156,61 +151,46 @@ fun StormCard(pass: PassSummary) {
             val snow24 = pass.snowNext24hCm?.let(::cmToInches)
             val snow72 = pass.snowNext72hCm?.let(::cmToInches)
             if (snow24 != null && snow72 != null) {
-                val text = if (snow72 < 0.2) {
-                    "No snow expected in the next 3 days"
+                if (snow72 < 0.2) {
+                    StatRow("Snow next 3 days", "None expected", palette.accent)
                 } else {
-                    "Forecast snow: ${fmtIn(snow24)} next 24h, ${fmtIn(snow72)} next 72h"
+                    StatRow("Snow next 24h", fmtIn(snow24), palette.accent)
+                    StatRow("Snow next 72h", fmtIn(snow72), palette.accent)
                 }
-                Text(text, style = MaterialTheme.typography.bodyMedium)
             }
             pass.nextPeriod?.let { period ->
-                Text(
-                    "${period.name}: ${period.short}, ${period.temperatureF ?: "--"} F, " +
-                        "wind ${period.wind}",
-                    style = MaterialTheme.typography.bodySmall,
+                StatRow(
+                    period.name,
+                    "${period.short} · ${period.temperatureF ?: "--"}°F · ${period.wind}",
+                    MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun StatRow(label: String, value: String, valueColor: androidx.compose.ui.graphics.Color) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = LocalPalette.current.subtleText,
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = valueColor,
+        )
     }
 }
 
 fun fmtIn(value: Double): String {
     val rounded = (value * 10).toInt() / 10.0
     return if (rounded == rounded.toInt().toDouble()) "${rounded.toInt()}\"" else "$rounded\""
-}
-
-@Composable
-fun FeedHealthLine(
-    asOf: String?,
-    stale: Boolean,
-    error: String?,
-    onRefresh: () -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                buildString {
-                    append("As of ")
-                    append(asOf?.take(16)?.replace("T", " ") ?: "unknown")
-                    if (stale) append(" (cached)")
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = if (stale) TierColors.r2 else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (error != null) {
-                // Keep the human part of network errors; ktor appends noisy
-                // bracketed diagnostics.
-                Text(
-                    "Refresh failed: ${error.substringBefore(" [").take(80)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-        TextButton(onClick = onRefresh) { Text("Refresh") }
-    }
 }
