@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +36,7 @@ private fun cmToInches(cm: Double): Double = cm / 2.54
 fun HomeScreen(
     repository: Repository,
     onOpenRoute: (String) -> Unit,
+    onShowOnMap: (MapFocus) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by repository.home.collectAsState()
@@ -111,14 +113,22 @@ fun HomeScreen(
                             )
                         }
                     }
-                    TextButton(onClick = { onOpenRoute(corridor.id) }) {
-                        Text("Route detail", color = palette.accent)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(onClick = { onOpenRoute(corridor.id) }) {
+                            Text("Route detail", color = palette.accent)
+                        }
+                        val pass = summary.passes.firstOrNull { it.corridorId == corridor.id }
+                        if (pass?.lat != null && pass.lon != null) {
+                            TextButton(onClick = {
+                                onShowOnMap(MapFocus(pass.lat, pass.lon, 10f, corridor.name))
+                            }) { Text("View on map", color = palette.accent) }
+                        }
                     }
                 }
             }
 
             summary.passes.firstOrNull { it.corridorId == corridor.id }?.let { pass ->
-                StormCard(pass)
+                StormCard(pass, onShowOnMap)
             }
         }
 
@@ -132,9 +142,14 @@ fun HomeScreen(
 }
 
 @Composable
-fun StormCard(pass: PassSummary) {
+fun StormCard(pass: PassSummary, onShowOnMap: (MapFocus) -> Unit = {}) {
     val palette = LocalPalette.current
-    CcCard(Modifier.fillMaxWidth()) {
+    val cardModifier = if (pass.lat != null && pass.lon != null) {
+        Modifier.fillMaxWidth().clickable {
+            onShowOnMap(MapFocus(pass.lat, pass.lon, 12f, pass.name))
+        }
+    } else Modifier.fillMaxWidth()
+    CcCard(cardModifier) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 "${pass.name} · ${pass.elevationFt} ft",

@@ -1,5 +1,6 @@
 package com.glazkov.chaincheck.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,7 +32,11 @@ private enum class ResortSort(val label: String) {
 }
 
 @Composable
-fun ResortsScreen(repository: Repository, modifier: Modifier = Modifier) {
+fun ResortsScreen(
+    repository: Repository,
+    onShowOnMap: (MapFocus) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     val state by repository.resorts.collectAsState()
     var sort by remember { mutableStateOf(ResortSort.Snow24h) }
 
@@ -59,14 +64,19 @@ fun ResortsScreen(repository: Repository, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 8.dp),
         ) {
-            items(sorted, key = { it.id }) { resort -> ResortRow(resort) }
+            items(sorted, key = { it.id }) { resort -> ResortRow(resort, onShowOnMap) }
         }
     }
 }
 
 @Composable
-private fun ResortRow(resort: ResortReport) {
-    CcCard(Modifier.fillMaxWidth()) {
+private fun ResortRow(resort: ResortReport, onShowOnMap: (MapFocus) -> Unit) {
+    val rowModifier = if (resort.lat != null && resort.lon != null) {
+        Modifier.fillMaxWidth().clickable {
+            onShowOnMap(MapFocus(resort.lat, resort.lon, 12f, resort.name))
+        }
+    } else Modifier.fillMaxWidth()
+    CcCard(rowModifier) {
         Row(
             Modifier.fillMaxWidth().padding(14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

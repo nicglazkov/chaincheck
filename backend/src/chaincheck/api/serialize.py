@@ -158,6 +158,8 @@ def pass_summary(
         "state": mtn_pass.state,
         "elevation_ft": mtn_pass.elevation_ft,
         "corridor_id": mtn_pass.corridor_id,
+        "lat": mtn_pass.lat,
+        "lon": mtn_pass.lon,
     }
     if forecast is not None:
         payload["alerts"] = [alert_dict(a) for a in forecast.alerts]

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,10 +42,12 @@ import com.glazkov.chaincheck.data.Repository
 fun RoutesScreen(
     repository: Repository,
     onOpenRoute: (String) -> Unit,
+    onShowOnMap: (MapFocus) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by repository.home.collectAsState()
     val corridors = state.summary?.corridors ?: emptyList()
+    val passByCorridor = state.summary?.passes?.associateBy { it.corridorId } ?: emptyMap()
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -71,7 +74,7 @@ fun RoutesScreen(
                         )
                     }
                     Spacer(Modifier.width(14.dp))
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text(corridor.name, style = MaterialTheme.typography.titleMedium)
                         Text(
                             corridor.description,
@@ -86,6 +89,18 @@ fun RoutesScreen(
                             )
                         }
                     }
+                    val pass = passByCorridor[corridor.id]
+                    if (pass?.lat != null && pass.lon != null) {
+                        IconButton(onClick = {
+                            onShowOnMap(MapFocus(pass.lat, pass.lon, 10f, corridor.name))
+                        }) {
+                            Icon(
+                                Icons.Filled.Map,
+                                contentDescription = "Show ${corridor.name} on map",
+                                tint = LocalPalette.current.accent,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -97,6 +112,7 @@ fun RouteDetailScreen(
     corridorId: String,
     repository: Repository,
     onBack: () -> Unit,
+    onShowOnMap: (MapFocus) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var detail by remember { mutableStateOf<CorridorDetail?>(null) }
@@ -142,7 +158,12 @@ fun RouteDetailScreen(
                 if (loaded.controlPoints.isNotEmpty()) {
                     item { Text("Chain control points", style = MaterialTheme.typography.titleSmall) }
                     items(loaded.controlPoints) { point ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            Modifier.fillMaxWidth().clickable {
+                                onShowOnMap(MapFocus(point.lat, point.lon, 13f, point.location))
+                            }.padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Text(
                                 point.tierLabel,
                                 color = TierColors.forTier(point.tier),
@@ -168,7 +189,13 @@ fun RouteDetailScreen(
                         Text("Closures", style = MaterialTheme.typography.titleSmall)
                     }
                     items(loaded.closureList) { closure ->
-                        Column(Modifier.fillMaxWidth()) {
+                        Column(
+                            Modifier.fillMaxWidth().clickable {
+                                onShowOnMap(
+                                    MapFocus(closure.begin.lat, closure.begin.lon, 13f, closure.location)
+                                )
+                            }.padding(vertical = 2.dp),
+                        ) {
                             Text("${closure.location} (${closure.direction})")
                             Text(
                                 listOfNotNull(
@@ -188,7 +215,11 @@ fun RouteDetailScreen(
                         Text("CHP incidents", style = MaterialTheme.typography.titleSmall)
                     }
                     items(loaded.incidentList) { incident ->
-                        Column(Modifier.fillMaxWidth()) {
+                        Column(
+                            Modifier.fillMaxWidth().clickable {
+                                onShowOnMap(MapFocus(incident.lat, incident.lon, 13f, incident.location))
+                            }.padding(vertical = 2.dp),
+                        ) {
                             Text(incident.type)
                             Text(
                                 "${incident.location} - ${incident.area}",

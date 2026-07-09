@@ -241,9 +241,18 @@ async def map_data() -> dict:
 
 @app.get("/v1/resorts")
 async def resorts() -> dict:
+    from chaincheck.feeds.resorts import RESORT_COORDS
+
     reports = await _state().resorts.all_reports()
     reports.sort(key=lambda r: (r.snow_24h_in or 0.0), reverse=True)
-    return {"resorts": [serialize.resort_dict(r) for r in reports]}
+    payloads = []
+    for r in reports:
+        payload = serialize.resort_dict(r)
+        coords = RESORT_COORDS.get(r.resort_id)
+        if coords:
+            payload["lat"], payload["lon"] = coords
+        payloads.append(payload)
+    return {"resorts": payloads}
 
 
 @app.get("/v1/resorts/{resort_id}")

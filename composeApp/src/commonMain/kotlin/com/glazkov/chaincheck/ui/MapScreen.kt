@@ -39,6 +39,8 @@ import com.glazkov.chaincheck.data.Repository
 @Composable
 expect fun PlatformMap(
     data: MapData,
+    focus: MapFocus?,
+    layers: MapLayers,
     onWebcamTap: (MapWebcam) -> Unit,
     onNavigateTo: (lat: Double, lon: Double, label: String) -> Unit,
     modifier: Modifier = Modifier,
@@ -49,11 +51,16 @@ expect fun launchNavigation(lat: Double, lon: Double, label: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen(repository: Repository, modifier: Modifier = Modifier) {
+fun MapScreen(
+    repository: Repository,
+    focus: MapFocus? = null,
+    modifier: Modifier = Modifier,
+) {
     val api = remember { ChainCheckApi() }
     var data by remember { mutableStateOf<MapData?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var webcam by remember { mutableStateOf<MapWebcam?>(null) }
+    var layers by remember { mutableStateOf(MapLayers()) }
 
     LaunchedEffect(Unit) {
         runCatching { api.mapData() }
@@ -75,6 +82,8 @@ fun MapScreen(repository: Repository, modifier: Modifier = Modifier) {
             else -> {
                 PlatformMap(
                     data = data!!,
+                    focus = focus,
+                    layers = layers,
                     onWebcamTap = { webcam = it },
                     onNavigateTo = { lat, lon, label -> launchNavigation(lat, lon, label) },
                     modifier = Modifier.fillMaxSize(),
@@ -84,6 +93,13 @@ fun MapScreen(repository: Repository, modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+                LayerToggles(
+                    layers = layers,
+                    onChange = { layers = it },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 12.dp, bottom = 18.dp),
                 )
             }
         }
@@ -124,6 +140,36 @@ fun MapScreen(repository: Repository, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+@Composable
+private fun LayerToggles(
+    layers: MapLayers,
+    onChange: (MapLayers) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        MapToggleChip("Roads", layers.roads) { onChange(layers.copy(roads = it)) }
+        MapToggleChip("Cams", layers.webcams) { onChange(layers.copy(webcams = it)) }
+        MapToggleChip("Resorts", layers.resorts) { onChange(layers.copy(resorts = it)) }
+    }
+}
+
+@Composable
+private fun MapToggleChip(label: String, on: Boolean, onToggle: (Boolean) -> Unit) {
+    val palette = LocalPalette.current
+    androidx.compose.material3.FilterChip(
+        selected = on,
+        onClick = { onToggle(!on) },
+        label = { Text(label) },
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            containerColor = if (palette.isDark) androidx.compose.ui.graphics.Color(0xCC101B2E)
+            else androidx.compose.ui.graphics.Color(0xF2FFFFFF),
+            selectedContainerColor = palette.accent,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    )
 }
 
 /** Compact "which way right now" strip built from data the app already has. */
