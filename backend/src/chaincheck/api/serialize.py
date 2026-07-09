@@ -13,6 +13,7 @@ from ca_roads.models import ChainControl, ChpIncident, LaneClosure
 
 from chaincheck.feeds.nws import ForecastPeriod, PassForecast, WinterAlert
 from chaincheck.feeds.openmeteo import SnowOutlook
+from chaincheck.feeds.resorts.base import ResortReport
 from chaincheck.feeds.roads import CorridorRoads, SierraSnapshot
 from chaincheck.passes import MountainPass
 from chaincheck.tiers import TIER_MEANING, control_tier, tier_label
@@ -121,6 +122,27 @@ def alert_dict(a: WinterAlert) -> dict:
         "headline": a.headline,
         "onset": _iso(a.onset),
         "ends": _iso(a.ends),
+    }
+
+
+def resort_dict(r: ResortReport) -> dict:
+    return {
+        "id": r.resort_id,
+        "name": r.name,
+        "snow_24h_in": r.snow_24h_in,
+        "snow_48h_in": r.snow_48h_in,
+        "snow_overnight_in": r.snow_overnight_in,
+        "storm_total_in": r.storm_total_in,
+        "base_depth_in": r.base_depth_in,
+        "base_depth_max_in": r.base_depth_max_in,
+        "season_total_in": r.season_total_in,
+        "lifts_open": r.lifts_open,
+        "lifts_total": r.lifts_total,
+        "updated_at": _iso(r.updated_at),
+        "ok": r.ok,
+        "stale": r.stale,
+        "error": r.error,
+        "notes": r.notes,
     }
 
 

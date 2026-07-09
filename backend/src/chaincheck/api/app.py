@@ -20,6 +20,7 @@ from chaincheck import __version__, rules
 from chaincheck.api import serialize
 from chaincheck.feeds.nws import NwsSource
 from chaincheck.feeds.openmeteo import OpenMeteoSource
+from chaincheck.feeds.resorts import ResortRegistry
 from chaincheck.feeds.roads import SierraRoads
 from chaincheck.passes import PASSES, PASSES_BY_ID
 from chaincheck.tiers import Tier
@@ -39,6 +40,7 @@ class AppState:
         self.roads = SierraRoads(self.client)
         self.nws = NwsSource(self.client)
         self.snow = OpenMeteoSource(self.client)
+        self.resorts = ResortRegistry(self.client)
         self.watch_state = differ.WatchState.empty()
         self.cadence = poller.CadenceState()
         self.recent_events: list[dict] = []
@@ -142,6 +144,21 @@ async def pass_detail(pass_id: str) -> dict:
     payload = serialize.pass_summary(mtn_pass, forecast, outlook)
     payload["periods"] = [serialize.period_dict(p) for p in forecast.periods]
     return payload
+
+
+@app.get("/v1/resorts")
+async def resorts() -> dict:
+    reports = await _state().resorts.all_reports()
+    reports.sort(key=lambda r: (r.snow_24h_in or 0.0), reverse=True)
+    return {"resorts": [serialize.resort_dict(r) for r in reports]}
+
+
+@app.get("/v1/resorts/{resort_id}")
+async def resort_detail(resort_id: str) -> dict:
+    report = await _state().resorts.report(resort_id)
+    if report is None:
+        raise HTTPException(404, f"unknown or disabled resort '{resort_id}'")
+    return serialize.resort_dict(report)
 
 
 class VehicleQuery(BaseModel):
