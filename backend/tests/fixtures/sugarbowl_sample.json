@@ -1,0 +1,23 @@
+{
+  "conditions_last_update": "12/12/2026 05:57 AM",
+  "conditions_snow_24hr_summit": "9",
+  "conditions_snow_24hr_base": "6",
+  "conditions_snow_overnight_summit": "4",
+  "conditions_storm_total_summit": "22",
+  "conditions_snowdepth_summit": "61",
+  "conditions_snowdepth_base": "42",
+  "conditions_snow_ytd_summit": "188",
+  "conditions_number_openlifts": "7",
+  "conditions_number_scheduledlifts": "2",
+  "lift_01_status_text": "Open",
+  "lift_02_status_text": "Open",
+  "lift_03_status_text": "Closed",
+  "lift_04_status_text": "Open",
+  "lift_05_status_text": "Open",
+  "lift_06_status_text": "On Standby",
+  "lift_07_status_text": "Open",
+  "lift_08_status_text": "Open",
+  "lift_09_status_text": "Closed",
+  "lift_10_status_text": "Open",
+  "lift_11_status_text": "Closed"
+}

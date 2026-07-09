@@ -1,0 +1,39 @@
+{
+  "Name": "Palisades Tahoe",
+  "LastUpdate": "2026-12-12T06:02:25-0800",
+  "SnowReport": {
+    "LastUpdate": "2026-12-12T06:02:25-0800",
+    "StormTotalIn": "18",
+    "SeasonTotalIn": "142",
+    "BaseArea": {
+      "Name": "Palisades Base, el. 6200'",
+      "BaseIn": "24",
+      "Last24HoursIn": "8",
+      "Last48HoursIn": "14",
+      "Last72HoursIn": "16"
+    },
+    "MidMountainArea": {
+      "Name": "Palisades Mid-Mountain, el. 8000'",
+      "BaseIn": "48",
+      "Last24HoursIn": "11",
+      "Last48HoursIn": "--",
+      "Last72HoursIn": "21"
+    }
+  },
+  "MountainAreas": [
+    {
+      "Name": "Village",
+      "Lifts": [
+        {"Name": "Funitel", "Status": "Open", "StatusEnglish": "open"},
+        {"Name": "Red Dog", "Status": "On Hold", "StatusEnglish": "wind_closure"},
+        {"Name": "KT-22", "Status": "Scheduled", "StatusEnglish": "scheduled"}
+      ]
+    },
+    {
+      "Name": "Alpine",
+      "Lifts": [
+        {"Name": "Summit Six", "Status": "Closed for Season", "StatusEnglish": "closed_for_season"}
+      ]
+    }
+  ]
+}
