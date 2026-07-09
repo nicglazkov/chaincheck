@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Snowflake-on-road glyph, monochrome for the status bar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11,4h2v6.17l4.24,-4.24 1.41,1.41L13.41,12l5.24,4.66 -1.41,1.41L13,13.83V20h-2v-6.17l-4.24,4.24 -1.41,-1.41L10.59,12 5.35,7.34l1.41,-1.41L11,10.17V4z" />
+</vector>
