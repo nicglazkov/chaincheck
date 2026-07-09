@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from chaincheck import rules
 from chaincheck.corridors import CORRIDORS_BY_ID
@@ -45,6 +46,7 @@ class TripFacts:
 
 
 DRIVE_WINDOW_HOURS = 4  # Sacramento-to-Tahoe scale drive
+PACIFIC = ZoneInfo("America/Los_Angeles")  # drivers read Pacific, not UTC
 
 # The brief names at most this many closures; the model only sees (and
 # validation only requires) these, plus an honest "...and N more" tail.
@@ -131,12 +133,19 @@ def assemble(
     )
 
 
+def _pacific_clock(when: datetime) -> str:
+    """'Sat 6:00 AM Pacific' - the clock a Sierra driver actually reads."""
+    local = when.astimezone(PACIFIC)
+    hour = local.strftime("%I").lstrip("0") or "12"
+    return f"{local.strftime('%a')} {hour}:{local.strftime('%M %p')} Pacific"
+
+
 def render_plain(facts: TripFacts) -> str:
     """Deterministic no-AI fallback brief, and the factual skeleton evals
     check against."""
     lines = [
         f"{facts.route} ({facts.corridor_name}), leaving {facts.origin} "
-        f"{facts.departure.strftime('%a %H:%M')}.",
+        f"{_pacific_clock(facts.departure)}.",
         f"Chain controls: {facts.tier_label}. {facts.tier_meaning}",
     ]
     if facts.active_controls:
@@ -160,7 +169,7 @@ def render_plain(facts: TripFacts) -> str:
         )
     if facts.ruling is not None:
         lines.append(f"Your vehicle: {facts.ruling.reason}")
-    when = facts.data_as_of.strftime("%H:%M UTC") if facts.data_as_of else "unknown"
+    when = _pacific_clock(facts.data_as_of) if facts.data_as_of else "unknown"
     suffix = " (cached)" if facts.stale else ""
     lines.append(f"Road data as of {when}{suffix}. Verify before you drive: 511 or "
                  "quickmap.dot.ca.gov.")
