@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,7 +51,7 @@ fun RoutesScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(corridors, key = { it.id }) { corridor ->
-            Card(Modifier.fillMaxWidth().clickable { onOpenRoute(corridor.id) }) {
+            CcCard(Modifier.fillMaxWidth().clickable { onOpenRoute(corridor.id) }) {
                 Row(
                     Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,

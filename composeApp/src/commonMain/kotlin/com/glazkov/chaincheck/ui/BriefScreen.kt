@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -156,7 +155,7 @@ fun BriefScreen(repository: Repository, modifier: Modifier = Modifier) {
         error?.let { Text("Couldn't get a brief: $it", color = MaterialTheme.colorScheme.error) }
 
         answer?.let { brief ->
-            Card(Modifier.fillMaxWidth()) {
+            CcCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
