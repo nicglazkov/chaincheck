@@ -8,10 +8,12 @@ max are intentionally not events - they'd be noise.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from chaincheck.corridors import CORRIDORS_BY_ID
+from chaincheck.feeds.nws import WinterAlert
 from chaincheck.feeds.roads import SierraSnapshot
+from chaincheck.passes import PASSES_BY_ID
 from chaincheck.tiers import Tier, tier_label
 
 
@@ -58,15 +60,28 @@ class ClosureChange:
 
 
 @dataclass(frozen=True)
+class StormWarning:
+    corridor_id: str
+    pass_id: str
+    event: str
+    headline: str
+
+    def summary(self) -> str:
+        mtn_pass = PASSES_BY_ID[self.pass_id]
+        return f"{self.event} for {mtn_pass.name} ({mtn_pass.route})"
+
+
+@dataclass(frozen=True)
 class WatchState:
     """Last-known per-corridor state, serializable for external storage."""
 
     tiers: dict[str, int]
     closure_keys: dict[str, tuple[str, ...]]
+    alert_ids: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     @classmethod
     def empty(cls) -> WatchState:
-        return cls(tiers={}, closure_keys={})
+        return cls(tiers={}, closure_keys={}, alert_ids={})
 
 
 def diff(prev: WatchState, snapshot: SierraSnapshot) -> tuple[list[object], WatchState]:
@@ -101,13 +116,46 @@ def diff(prev: WatchState, snapshot: SierraSnapshot) -> tuple[list[object], Watc
             ):
                 events.append(TierChange(corridor_id, old_tier, roads.tier))
 
-        prev_keys = set(prev.closure_keys.get(corridor_id, ()))
-        curr_keys = set(keys)
-        locations = {c.index: c.location_name for c in roads.closures}
-        for idx in sorted(curr_keys - prev_keys):
-            events.append(ClosureChange(corridor_id, idx, True, locations.get(idx, "")))
+        # First sight of a corridor only establishes the baseline; firing
+        # "new closure" for everything already up would spam every restart.
         if corridor_id in prev.closure_keys:
+            prev_keys = set(prev.closure_keys[corridor_id])
+            curr_keys = set(keys)
+            locations = {c.index: c.location_name for c in roads.closures}
+            for idx in sorted(curr_keys - prev_keys):
+                events.append(
+                    ClosureChange(corridor_id, idx, True, locations.get(idx, ""))
+                )
             for idx in sorted(prev_keys - curr_keys):
                 events.append(ClosureChange(corridor_id, idx, False, ""))
 
-    return events, WatchState(tiers=new_tiers, closure_keys=new_closures)
+    return events, WatchState(
+        tiers=new_tiers, closure_keys=new_closures, alert_ids=prev.alert_ids
+    )
+
+
+def diff_alerts(
+    prev: WatchState, alerts_by_pass: dict[str, list[WinterAlert]]
+) -> tuple[list[StormWarning], WatchState]:
+    """New winter alerts since ``prev``; first sight of a pass fires nothing."""
+    events: list[StormWarning] = []
+    new_ids: dict[str, tuple[str, ...]] = dict(prev.alert_ids)
+    for pass_id, alerts in alerts_by_pass.items():
+        current = tuple(sorted(a.id for a in alerts))
+        if pass_id in prev.alert_ids:
+            known = set(prev.alert_ids[pass_id])
+            corridor_id = PASSES_BY_ID[pass_id].corridor_id
+            for alert in alerts:
+                if alert.id not in known:
+                    events.append(
+                        StormWarning(
+                            corridor_id=corridor_id,
+                            pass_id=pass_id,
+                            event=alert.event,
+                            headline=alert.headline,
+                        )
+                    )
+        new_ids[pass_id] = current
+    return events, WatchState(
+        tiers=prev.tiers, closure_keys=prev.closure_keys, alert_ids=new_ids
+    )

@@ -23,6 +23,13 @@ from chaincheck.feeds.openmeteo import OpenMeteoSource
 from chaincheck.feeds.resorts import ResortRegistry
 from chaincheck.feeds.roads import SierraRoads
 from chaincheck.passes import PASSES, PASSES_BY_ID
+from chaincheck.push import dispatch as push_dispatch
+from chaincheck.push.fcm import build_sender
+from chaincheck.push.subscriptions import (
+    FirestoreSubscriptionStore,
+    InMemorySubscriptionStore,
+    validate_corridors,
+)
 from chaincheck.tiers import Tier
 from chaincheck.watcher import differ, poller
 
@@ -44,6 +51,13 @@ class AppState:
         self.watch_state = differ.WatchState.empty()
         self.cadence = poller.CadenceState()
         self.recent_events: list[dict] = []
+        if os.environ.get("SUBSCRIPTIONS_BACKEND", "memory") == "firestore":
+            self.subscriptions = FirestoreSubscriptionStore(
+                project=os.environ.get("GOOGLE_CLOUD_PROJECT")
+            )
+        else:
+            self.subscriptions = InMemorySubscriptionStore()
+        self.push_sender = build_sender()
 
 
 state: AppState | None = None
@@ -191,6 +205,38 @@ async def evaluate_rules(query: VehicleQuery) -> dict:
     }
 
 
+class SubscriptionBody(BaseModel):
+    token: str
+    corridor_ids: list[str]
+
+
+@app.put("/v1/subscriptions")
+async def upsert_subscription(body: SubscriptionBody) -> dict:
+    if not body.token or len(body.token) > 4096:
+        raise HTTPException(422, "invalid token")
+    corridor_ids = validate_corridors(body.corridor_ids)
+    if not corridor_ids:
+        raise HTTPException(422, "no valid corridor ids")
+    sub = await _state().subscriptions.upsert(body.token, corridor_ids)
+    return {"token": sub.token, "corridor_ids": sub.corridor_ids}
+
+
+@app.get("/v1/subscriptions/{token}")
+async def get_subscription(token: str) -> dict:
+    sub = await _state().subscriptions.get(token)
+    if sub is None:
+        raise HTTPException(404, "unknown token")
+    return {"token": sub.token, "corridor_ids": sub.corridor_ids}
+
+
+@app.delete("/v1/subscriptions/{token}")
+async def delete_subscription(token: str) -> dict:
+    removed = await _state().subscriptions.delete(token)
+    if not removed:
+        raise HTTPException(404, "unknown token")
+    return {"deleted": True}
+
+
 @app.post("/internal/poll")
 async def poll_tick(x_poll_token: str | None = Header(default=None)) -> dict:
     expected = os.environ.get("POLL_TOKEN")
@@ -204,12 +250,19 @@ async def poll_tick(x_poll_token: str | None = Header(default=None)) -> dict:
     snapshot = await st.roads.snapshot()
     events, st.watch_state = differ.diff(st.watch_state, snapshot)
 
-    alerts = []
+    alerts_by_pass: dict[str, list] = {}
     for p in PASSES:
         forecast = await st.nws.forecast(p)
-        alerts.extend(forecast.alerts)
-    st.cadence.active = poller.is_active_weather(snapshot, alerts, now)
+        if forecast.ok:
+            alerts_by_pass[p.id] = forecast.alerts
+    storm_events, st.watch_state = differ.diff_alerts(st.watch_state, alerts_by_pass)
+    events = list(events) + list(storm_events)
+
+    all_alerts = [a for alerts in alerts_by_pass.values() for a in alerts]
+    st.cadence.active = poller.is_active_weather(snapshot, all_alerts, now)
     st.cadence.last_poll_at = now
+
+    pushes_sent = await push_dispatch.dispatch(events, st.subscriptions, st.push_sender)
 
     event_payloads = [
         {"summary": e.summary(), "corridor_id": e.corridor_id, "at": now.isoformat()}
@@ -220,6 +273,7 @@ async def poll_tick(x_poll_token: str | None = Header(default=None)) -> dict:
         "polled": True,
         "active": st.cadence.active,
         "events": event_payloads,
+        "pushes_sent": pushes_sent,
         "feed": serialize.snapshot_health(snapshot),
     }
 
