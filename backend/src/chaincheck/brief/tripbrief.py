@@ -12,6 +12,7 @@ Hard rules, enforced structurally:
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 
@@ -20,6 +21,8 @@ from ca_roads.cache import TTLCache
 from chaincheck.brief import facts as facts_mod
 from chaincheck.brief import validate
 from chaincheck.brief.facts import TripFacts
+
+logger = logging.getLogger(__name__)
 
 MODEL = os.environ.get("BRIEF_MODEL", "claude-haiku-4-5-20251001")
 CACHE_TTL = 60 * 60
@@ -64,11 +67,15 @@ class TripBriefer:
         if self._client is None:
             import anthropic
 
-            self._client = anthropic.AsyncAnthropic()
+            # Secret-manager/console-pasted keys often carry a trailing
+            # newline, which corrupts the auth header; strip defensively.
+            self._client = anthropic.AsyncAnthropic(
+                api_key=os.environ["ANTHROPIC_API_KEY"].strip()
+            )
         return self._client
 
     def available(self) -> bool:
-        return bool(os.environ.get("ANTHROPIC_API_KEY"))
+        return bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
 
     async def narrate(self, facts: TripFacts) -> BriefResult:
         plain = facts_mod.render_plain(facts)
@@ -106,12 +113,23 @@ class TripBriefer:
 
         outcome = await self._cache.get(key, CACHE_TTL, CACHE_MAX_SERVE, fetch)
         if not outcome.served or not outcome.value:
+            logger.warning(
+                "trip brief narration failed for %s, using plain rendering: %s",
+                facts.corridor_id,
+                outcome.error,
+            )
             return BriefResult(text=plain, ai=False, model=None, cached=False, facts=facts)
 
         text = str(outcome.value)
-        if validate.problems(text, facts):
+        found_problems = validate.problems(text, facts)
+        if found_problems:
             # A brief that drops an active control (or invents one) never
             # ships; the deterministic rendering is always complete.
+            logger.warning(
+                "trip brief for %s failed validation, using plain rendering: %s",
+                facts.corridor_id,
+                "; ".join(found_problems),
+            )
             return BriefResult(text=plain, ai=False, model=None, cached=False, facts=facts)
         if facts.ruling is not None:
             text = f"{text}\n\nYour vehicle: {facts.ruling.reason}"
