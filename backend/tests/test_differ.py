@@ -82,6 +82,25 @@ def test_unknown_gap_does_not_fire_phantom_change():
     assert events == []
 
 
+def test_first_snapshot_with_existing_closures_is_silent():
+    from ca_roads.models import LaneClosure
+
+    snap = snapshot_with({})
+    closure = LaneClosure(
+        index="C1", district=3, route="80", county="Placer", direction="East",
+        location_name="Kingvale", nearby_place="", type_of_closure="Full",
+        facility="", type_of_work="", lanes_closed="all", total_lanes=2,
+        estimated_delay_minutes=None, duration="", begin_lat=39.31,
+        begin_lon=-120.44, end_lat=39.32, end_lon=-120.40, begin_milepost=None,
+        end_milepost=None, start_epoch=0, end_epoch=0, indefinite_end=False,
+        is_1097=True, is_1098=False, is_1022=False, epoch_1097=0,
+    )
+    snap.corridors["i80"].closures.append(closure)
+    events, state = differ.diff(differ.WatchState.empty(), snap)
+    assert events == []
+    assert state.closure_keys["i80"] == ("C1",)
+
+
 def test_closure_appears_and_clears():
     snap_with_closure = snapshot_with({})
     from ca_roads.models import LaneClosure
