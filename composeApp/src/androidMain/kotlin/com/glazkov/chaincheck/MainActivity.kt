@@ -12,6 +12,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         NotificationPermission.register(this)
+        com.glazkov.chaincheck.ui.navContext = applicationContext
         val repository = (application as ChainCheckApp).repository
         setContent { App(repository) }
     }
