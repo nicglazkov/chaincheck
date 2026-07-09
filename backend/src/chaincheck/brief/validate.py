@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from chaincheck.brief.facts import TripFacts
+from chaincheck.brief.facts import CLOSURE_MENTION_CAP, TripFacts
 
 BANNED_PHRASES = (
     "you'll make it",
@@ -36,7 +36,9 @@ def problems(text: str, facts: TripFacts) -> list[str]:
         location = control.split(" (")[0]
         if location.lower() not in lowered:
             found.append(f"active control not mentioned: {location}")
-    for closure in facts.closures:
+    # Only the closures the model was actually shown (render_plain caps the
+    # list); requiring the ones it never saw guarantees failure.
+    for closure in facts.closures[:CLOSURE_MENTION_CAP]:
         location = closure.split(" (")[0]
         if location.lower() not in lowered:
             found.append(f"closure not mentioned: {location}")
@@ -45,10 +47,13 @@ def problems(text: str, facts: TripFacts) -> list[str]:
         event = alert.split(" until ")[0]
         if event.lower() not in lowered:
             found.append(f"weather alert not mentioned: {event}")
+    # A tier token is legitimate when it appears anywhere in the facts the
+    # model was given - e.g. a corridor at R2 whose Meyers checkpoint reads
+    # R-1. Only tokens absent from the whole facts corpus are "invented".
+    corpus = " ".join((facts.tier_label, facts.tier_meaning, *facts.active_controls))
     for token in TIER_TOKENS:
-        if token == facts.tier_label:
-            continue
-        if re.search(rf"\b{token}\b", text) and token not in facts.tier_meaning:
+        legitimate = token in corpus or token.replace("R", "R-") in corpus
+        if not legitimate and re.search(rf"\b{token}\b", text):
             found.append(f"invented road state: mentions {token}")
     for banned in BANNED_PHRASES:
         if banned in lowered:
