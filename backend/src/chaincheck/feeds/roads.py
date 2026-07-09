@@ -41,6 +41,19 @@ class SierraSnapshot:
     notes: list[str] = field(default_factory=list)
 
 
+def _dedupe_controls(controls: list[ChainControl]) -> list[ChainControl]:
+    """One entry per checkpoint. The district feeds carry a record per
+    postmile segment, so a checkpoint like "Mogul (West)" appears several
+    times; keep the strictest-tier record for each (location, direction)."""
+    best: dict[tuple[str, str], ChainControl] = {}
+    for control in controls:
+        key = (control.location_name.strip().lower(), control.direction.strip().lower())
+        current = best.get(key)
+        if current is None or control_tier(control) > control_tier(current):
+            best[key] = control
+    return list(best.values())
+
+
 class SierraRoads:
     """Filters statewide ca_roads feeds down to the Sierra corridors."""
 
@@ -95,6 +108,7 @@ class SierraRoads:
                     by_id[corridor.id].incidents.append(incident)
 
         for roads in by_id.values():
+            roads.controls = _dedupe_controls(roads.controls)
             roads.controls.sort(key=lambda c: c.lat, reverse=True)
             if controls.ok and roads.controls:
                 roads.tier = max(control_tier(c) for c in roads.controls)

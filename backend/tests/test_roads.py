@@ -3,10 +3,45 @@
 import httpx
 import respx
 from ca_roads.feeds import chains, chp, lcs
+from ca_roads.models import ChainControl
 
 from chaincheck.corridors import SIERRA_DISTRICTS
-from chaincheck.feeds.roads import SierraRoads
+from chaincheck.feeds.roads import SierraRoads, _dedupe_controls
 from chaincheck.tiers import Tier
+
+
+def _control(location: str, direction: str, status: str, index: str) -> ChainControl:
+    return ChainControl(
+        index=index,
+        district=3,
+        route="80",
+        county="Placer",
+        direction=direction,
+        location_name=location,
+        nearby_place="",
+        lat=39.3,
+        lon=-120.4,
+        in_service=True,
+        status=status,
+        status_description="",
+        status_updated_at=None,
+    )
+
+
+def test_dedupe_keeps_one_record_per_checkpoint_strictest_tier():
+    controls = [
+        _control("Mogul", "West", "R-0", "a"),
+        _control("Mogul", "West", "R-2", "b"),  # per-postmile duplicate, stricter
+        _control("Mogul", "West", "R-1", "c"),
+        _control("Mogul", "East", "R-0", "d"),  # other direction stays separate
+        _control("Floriston On-ramp", "East", "R-0", "e"),
+    ]
+    deduped = _dedupe_controls(controls)
+    assert len(deduped) == 3
+    mogul_west = next(
+        c for c in deduped if c.location_name == "Mogul" and c.direction == "West"
+    )
+    assert mogul_west.status == "R-2"
 
 
 @respx.mock
