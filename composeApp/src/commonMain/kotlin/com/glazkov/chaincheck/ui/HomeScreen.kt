@@ -202,8 +202,10 @@ fun FeedHealthLine(
                 color = if (stale) TierColors.r2 else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (error != null) {
+                // Keep the human part of network errors; ktor appends noisy
+                // bracketed diagnostics.
                 Text(
-                    "Refresh failed: $error",
+                    "Refresh failed: ${error.substringBefore(" [").take(80)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
