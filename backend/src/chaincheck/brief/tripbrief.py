@@ -12,6 +12,7 @@ Hard rules, enforced structurally:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from dataclasses import dataclass
@@ -36,14 +37,15 @@ set of verified facts about one route. Rules, absolute:
   control level, closure, or forecast. If a fact isn't listed, don't mention it.
 - The first sentence must name the origin and state the current control level
   by its exact label from the facts (R0, R1, R2, R3, or Closed).
-- Never mention any control level other than the current one - not even
+- Never mention a control level that does not appear in the facts - not even
   hypothetically ("could go to R2") or as an explanation of the scale.
-- Every active chain control point (by its location name) and every closure
-  in the facts MUST appear in the brief. Name weather alerts exactly as given.
+- Every active chain control point and every listed closure MUST appear in
+  the brief by its exact location name - do not summarize closures into a
+  count or "several construction zones". Name weather alerts exactly as given.
 - Never suggest the driver will be fine without chains or that conditions are
   safe. Requirements and conditions only; the decision is the driver's.
 - Plain prose only: no markdown, no headers, no bold, no bullet lists.
-  120-180 words, ordered: the answer right now, what changes during their
+  120-220 words, ordered: the answer right now, what changes during their
   drive window, what to bring/do.
 - End with: verify before driving (511 or quickmap.dot.ca.gov).
 """
@@ -82,53 +84,97 @@ class TripBriefer:
         if not self.available():
             return BriefResult(text=plain, ai=False, model=None, cached=False, facts=facts)
 
+        # The key carries a digest of every fact that must survive into the
+        # narration; if controls, closures, or alerts change mid-hour the
+        # cache misses instead of serving a brief about the old facts.
+        material = "|".join(
+            (
+                facts.tier_label,
+                *facts.active_controls,
+                *facts.closures[: facts_mod.CLOSURE_MENTION_CAP],
+                *facts.alerts,
+            )
+        )
         key = (
             facts.corridor_id,
             facts.origin.lower().strip(),
             facts.departure.strftime("%Y-%m-%dT%H"),
-            facts.tier,
             facts.ruling.requirement.value if facts.ruling else None,
+            hashlib.sha256(material.encode()).hexdigest()[:16],
         )
 
-        async def fetch() -> str:
+        user_prompt = (
+            "Facts for this brief (the only truth you have):\n\n"
+            f"{plain}\n\n"
+            "Write the brief. Do not restate the vehicle-requirement "
+            "sentence verbatim; it will be appended after your text."
+        )
+
+        async def generate(messages: list[dict]) -> str:
             message = await self._anthropic().messages.create(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
                 system=SYSTEM_PROMPT,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": (
-                            "Facts for this brief (the only truth you have):\n\n"
-                            f"{plain}\n\n"
-                            "Write the brief. Do not restate the vehicle-requirement "
-                            "sentence verbatim; it will be appended after your text."
-                        ),
-                    }
-                ],
+                messages=messages,
             )
             return "".join(
                 block.text for block in message.content if block.type == "text"
             ).strip()
 
+        async def fetch() -> str:
+            """Validated narration, retried once with feedback. Returns ""
+            (cached) when both drafts fail validation, so a bad-narration
+            hour serves the plain rendering without regenerating per request.
+            Only validated text or that empty marker ever enters the cache."""
+            draft = await generate([{"role": "user", "content": user_prompt}])
+            found = validate.problems(draft, facts)
+            if not found:
+                return draft
+            retry = await generate(
+                [
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": draft},
+                    {
+                        "role": "user",
+                        "content": (
+                            "That draft fails these checks:\n- "
+                            + "\n- ".join(found)
+                            + "\nRewrite the full brief fixing every one of them."
+                        ),
+                    },
+                ]
+            )
+            found = validate.problems(retry, facts)
+            if not found:
+                return retry
+            logger.warning(
+                "trip brief for %s failed validation twice, using plain "
+                "rendering: %s",
+                facts.corridor_id,
+                "; ".join(found),
+            )
+            return ""
+
         outcome = await self._cache.get(key, CACHE_TTL, CACHE_MAX_SERVE, fetch)
         if not outcome.served or not outcome.value:
-            logger.warning(
-                "trip brief narration failed for %s, using plain rendering: %s",
-                facts.corridor_id,
-                outcome.error,
-            )
+            if outcome.error:
+                logger.warning(
+                    "trip brief narration failed for %s, using plain rendering: %s",
+                    facts.corridor_id,
+                    outcome.error,
+                )
             return BriefResult(text=plain, ai=False, model=None, cached=False, facts=facts)
 
         text = str(outcome.value)
-        found_problems = validate.problems(text, facts)
-        if found_problems:
-            # A brief that drops an active control (or invents one) never
-            # ships; the deterministic rendering is always complete.
+        # Safety net: even a cache hit must validate against the facts being
+        # answered right now (cheap and deterministic).
+        leftover = validate.problems(text, facts)
+        if leftover:
             logger.warning(
-                "trip brief for %s failed validation, using plain rendering: %s",
+                "cached trip brief for %s no longer matches current facts, "
+                "using plain rendering: %s",
                 facts.corridor_id,
-                "; ".join(found_problems),
+                "; ".join(leftover),
             )
             return BriefResult(text=plain, ai=False, model=None, cached=False, facts=facts)
         if facts.ruling is not None:
