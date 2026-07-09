@@ -171,3 +171,27 @@ data class RulesAnswer(
     val reason: String = "",
     val disclaimer: String = "",
 )
+
+@Serializable
+data class TripBriefQuery(
+    @SerialName("corridor_id") val corridorId: String,
+    val origin: String,
+    @SerialName("departure_time") val departureTime: String? = null,
+    val drivetrain: String? = null,
+    val tires: String? = null,
+    @SerialName("over_6000_lbs") val over6000Lbs: Boolean = false,
+    val towing: Boolean = false,
+)
+
+@Serializable
+data class TripBriefAnswer(
+    val brief: String = "",
+    val ai: Boolean = false,
+    val model: String? = null,
+    val cached: Boolean = false,
+    val tier: Int = -1,
+    @SerialName("tier_label") val tierLabel: String = "",
+    @SerialName("as_of") val asOf: String? = null,
+    val stale: Boolean = false,
+    val disclaimer: String = "",
+)
