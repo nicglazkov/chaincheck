@@ -1,0 +1,8 @@
+# Shell scripts must stay LF (CI runs them on Linux).
+gradlew text eol=lf
+*.sh text eol=lf
+# Windows batch files stay CRLF.
+*.bat text eol=crlf
+# Never diff/convert binaries.
+*.jar binary
+*.png binary
