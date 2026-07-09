@@ -26,6 +26,21 @@ BANNED_PHRASES = (
 TIER_TOKENS = ("R0", "R1", "R2", "R3")
 
 
+def _mentions(lowered_text: str, location: str) -> bool:
+    """Whether a location is named, tolerating slash/whitespace reformatting.
+
+    "Five Mile Rd / Paul Bunyon Rd" counts as mentioned when each component
+    name appears, so "Five Mile Rd/Paul Bunyon Rd" and reordered forms pass;
+    a brief that names neither road still fails.
+    """
+    squeezed = re.sub(r"\s+", " ", lowered_text)
+    for part in location.lower().split("/"):
+        part = re.sub(r"\s+", " ", part).strip()
+        if part and part not in squeezed:
+            return False
+    return True
+
+
 def problems(text: str, facts: TripFacts) -> list[str]:
     found: list[str] = []
     lowered = text.lower()
@@ -34,13 +49,13 @@ def problems(text: str, facts: TripFacts) -> list[str]:
         found.append(f"current control level {facts.tier_label} not stated")
     for control in facts.active_controls:
         location = control.split(" (")[0]
-        if location.lower() not in lowered:
+        if not _mentions(lowered, location):
             found.append(f"active control not mentioned: {location}")
     # Only the closures the model was actually shown (render_plain caps the
     # list); requiring the ones it never saw guarantees failure.
     for closure in facts.closures[:CLOSURE_MENTION_CAP]:
         location = closure.split(" (")[0]
-        if location.lower() not in lowered:
+        if not _mentions(lowered, location):
             found.append(f"closure not mentioned: {location}")
     for alert in facts.alerts:
         # The alert's event name must survive; headlines may be shortened.
