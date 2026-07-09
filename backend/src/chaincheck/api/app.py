@@ -18,6 +18,8 @@ from pydantic import BaseModel
 
 from chaincheck import __version__, rules
 from chaincheck.api import serialize
+from chaincheck.brief import facts as brief_facts
+from chaincheck.brief.tripbrief import TripBriefer
 from chaincheck.feeds.nws import NwsSource
 from chaincheck.feeds.openmeteo import OpenMeteoSource
 from chaincheck.feeds.resorts import ResortRegistry
@@ -58,6 +60,7 @@ class AppState:
         else:
             self.subscriptions = InMemorySubscriptionStore()
         self.push_sender = build_sender()
+        self.briefer = TripBriefer()
 
 
 state: AppState | None = None
@@ -83,8 +86,11 @@ def _state() -> AppState:
     return state
 
 
+# Note: Cloud Run's frontend intercepts /healthz on run.app domains, so the
+# health endpoint is /health (the old path stays for local tooling).
+@app.get("/health")
 @app.get("/healthz")
-async def healthz() -> dict:
+async def health() -> dict:
     return {"ok": True, "version": __version__}
 
 
@@ -201,6 +207,61 @@ async def evaluate_rules(query: VehicleQuery) -> dict:
     return {
         "requirement": ruling.requirement.value,
         "reason": ruling.reason,
+        "disclaimer": DISCLAIMER,
+    }
+
+
+class TripBriefQuery(BaseModel):
+    corridor_id: str
+    origin: str = "Sacramento"
+    departure_time: datetime | None = None
+    drivetrain: rules.Drivetrain | None = None
+    tires: rules.Tires | None = None
+    over_6000_lbs: bool = False
+    towing: bool = False
+
+
+@app.post("/v1/tripbrief")
+async def trip_brief(query: TripBriefQuery) -> dict:
+    st = _state()
+    if query.corridor_id not in {p.corridor_id for p in PASSES}:
+        raise HTTPException(422, f"no pass forecast for corridor '{query.corridor_id}'")
+    departure = query.departure_time or datetime.now(UTC)
+    if departure.tzinfo is None:
+        departure = departure.replace(tzinfo=UTC)
+
+    snapshot = await st.roads.snapshot()
+    mtn_pass = next(p for p in PASSES if p.corridor_id == query.corridor_id)
+    forecast, outlook = await asyncio.gather(
+        st.nws.forecast(mtn_pass), st.snow.outlook(mtn_pass)
+    )
+    vehicle = None
+    if query.drivetrain is not None and query.tires is not None:
+        vehicle = rules.Vehicle(
+            drivetrain=query.drivetrain,
+            tires=query.tires,
+            over_6000_lbs=query.over_6000_lbs,
+            towing=query.towing,
+        )
+    facts = brief_facts.assemble(
+        corridor_id=query.corridor_id,
+        origin=query.origin,
+        departure=departure,
+        snapshot=snapshot,
+        forecast=forecast,
+        outlook=outlook,
+        vehicle=vehicle,
+    )
+    result = await st.briefer.narrate(facts)
+    return {
+        "brief": result.text,
+        "ai": result.ai,
+        "model": result.model,
+        "cached": result.cached,
+        "tier": facts.tier,
+        "tier_label": facts.tier_label,
+        "as_of": facts.data_as_of.isoformat() if facts.data_as_of else None,
+        "stale": facts.stale,
         "disclaimer": DISCLAIMER,
     }
 
