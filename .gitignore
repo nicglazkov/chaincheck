@@ -30,3 +30,6 @@ local.properties
 app/build/
 build/
 captures/
+
+# Kotlin compiler session files
+.kotlin/
