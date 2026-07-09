@@ -194,7 +194,24 @@ async def map_data() -> dict:
             payload["corridor_id"] = roads.corridor.id
             incidents.append(payload)
 
+    corridor_lines = [
+        {
+            "id": roads.corridor.id,
+            "route": roads.corridor.display_route,
+            "name": roads.corridor.name,
+            "tier": int(roads.tier),
+            "tier_label": serialize.tier_label_for(roads.tier),
+            "segments": [
+                [{"lat": lat, "lon": lon} for lat, lon in segment]
+                for segment in roads.corridor.segments
+            ],
+        }
+        for roads in snapshot.corridors.values()
+        if roads.corridor.segments
+    ]
+
     return {
+        "corridors": corridor_lines,
         "controls": controls,
         "closures": closures,
         "incidents": incidents,

@@ -175,3 +175,8 @@ def pass_summary(
         storm = outlook.storm_start()
         payload["storm_start"] = _iso(storm)
     return payload
+
+
+def tier_label_for(tier) -> str:
+    """Stable alias used by the map payload."""
+    return tier_label(tier)
