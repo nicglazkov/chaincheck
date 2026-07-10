@@ -1,0 +1,103 @@
+name: canary
+
+# Weekly deep health check against the live API. If anything here fails,
+# GitHub emails the repo owner. This is the "is it still working?" tripwire
+# for a hands-off deployment.
+
+on:
+  schedule:
+    - cron: "0 15 * * 1" # Mondays 15:00 UTC (7/8 AM Pacific)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE_URL: https://chaincheck-api-55497952159.us-west1.run.app
+
+jobs:
+  live-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe the live service
+        run: |
+          python3 - <<'EOF'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+          from datetime import UTC, datetime
+
+          base = os.environ["BASE_URL"]
+          failures = []
+
+          def get(path):
+              with urllib.request.urlopen(base + path, timeout=30) as resp:
+                  return resp.status, json.load(resp)
+
+          def check(name, ok, detail=""):
+              print(("PASS" if ok else "FAIL"), name, detail)
+              if not ok:
+                  failures.append(f"{name}: {detail}")
+
+          status, health = get("/health")
+          check("health responds", status == 200 and health.get("ok") is True,
+                str(health)[:200])
+
+          status, summary = get("/v1/summary")
+          corridors = summary.get("corridors", [])
+          check("summary has all corridors", len(corridors) >= 7,
+                f"{len(corridors)} corridors")
+
+          feed = summary.get("feed", {})
+          age = None
+          if feed.get("as_of"):
+              age = (datetime.now(UTC)
+                     - datetime.fromisoformat(feed["as_of"])).total_seconds()
+          check("road data fetched within 6h",
+                feed.get("ok") is True and age is not None and age < 6 * 3600,
+                f"feed as_of is {age and round(age / 60)} min old")
+
+          status, mapdata = get("/v1/map")
+          lines = mapdata.get("corridors", [])
+          points = sum(
+              len(seg) for c in lines for seg in c.get("segments", []))
+          check("map geometry intact", len(lines) >= 7 and points > 1000,
+                f"{len(lines)} lines, {points} points")
+          check("webcams present", len(mapdata.get("webcams", [])) >= 40,
+                f"{len(mapdata.get('webcams', []))} webcams")
+
+          status, resorts = get("/v1/resorts")
+          entries = resorts.get("resorts", [])
+          check("all resorts listed", len(entries) >= 11, f"{len(entries)} resorts")
+
+          # Trip brief must serve, AI or plain; one call/week is negligible spend.
+          body = json.dumps({"corridor_id": "i80", "origin": "Sacramento"}).encode()
+          req = urllib.request.Request(
+              base + "/v1/tripbrief", data=body,
+              headers={"Content-Type": "application/json"})
+          with urllib.request.urlopen(req, timeout=60) as resp:
+              brief = json.load(resp)
+          check("trip brief serves", resp.status == 200
+                and len(brief.get("brief", "")) > 50,
+                f"ai={brief.get('ai')}")
+
+          # Security regression tripwire: the poll endpoint must stay locked.
+          req = urllib.request.Request(
+              base + "/internal/poll", data=b"{}", method="POST",
+              headers={"Content-Type": "application/json"})
+          try:
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  check("poll rejects anonymous", False, f"got {resp.status}")
+          except urllib.error.HTTPError as exc:
+              check("poll rejects anonymous", exc.code in (401, 403),
+                    f"got {exc.code}")
+
+          if failures:
+              print("\nCANARY FAILURES:")
+              for f in failures:
+                  print(" -", f)
+              sys.exit(1)
+          print("\nAll canary checks passed.")
+          EOF

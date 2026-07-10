@@ -27,10 +27,17 @@ class PushMessage:
     kind: str  # "tier_change" | "closure" | "storm_warning"
 
 
+@dataclass
+class SendReport:
+    """Outcome of one multicast: successes plus tokens that will never work
+    again (uninstalled app, wrong sender, malformed) and should be pruned."""
+
+    sent: int = 0
+    dead_tokens: list[str] = field(default_factory=list)
+
+
 class PushSender(Protocol):
-    async def send(self, tokens: list[str], message: PushMessage) -> int:
-        """Send to tokens; returns the number of successful sends."""
-        ...
+    async def send(self, tokens: list[str], message: PushMessage) -> SendReport: ...
 
 
 @dataclass
@@ -39,10 +46,10 @@ class RecordingSender:
 
     sent: list[tuple[str, PushMessage]] = field(default_factory=list)
 
-    async def send(self, tokens: list[str], message: PushMessage) -> int:
+    async def send(self, tokens: list[str], message: PushMessage) -> SendReport:
         self.sent.extend((t, message) for t in tokens)
         logger.info("push (dry-run) to %d tokens: %s", len(tokens), message.title)
-        return len(tokens)
+        return SendReport(sent=len(tokens))
 
 
 class FcmSender:
@@ -53,12 +60,20 @@ class FcmSender:
             options = {"projectId": project} if project else None
             firebase_admin.initialize_app(options=options)
 
-    async def send(self, tokens: list[str], message: PushMessage) -> int:
+    async def send(self, tokens: list[str], message: PushMessage) -> SendReport:
         if not tokens:
-            return 0
-        from firebase_admin import messaging
+            return SendReport()
+        from firebase_admin import exceptions, messaging
 
-        def _send() -> int:
+        # Permanent per-token failures: the token can never receive a push
+        # again, so keeping its subscription only wastes future sends.
+        dead_types = (
+            messaging.UnregisteredError,
+            messaging.SenderIdMismatchError,
+            exceptions.InvalidArgumentError,
+        )
+
+        def _send() -> SendReport:
             multicast = messaging.MulticastMessage(
                 tokens=tokens,
                 notification=messaging.Notification(
@@ -68,12 +83,20 @@ class FcmSender:
                 android=messaging.AndroidConfig(priority="high"),
             )
             response = messaging.send_each_for_multicast(multicast)
+            dead: list[str] = []
             for token, result in zip(tokens, response.responses, strict=True):
-                if result.exception:
+                if result.exception is None:
+                    continue
+                if isinstance(result.exception, dead_types):
+                    dead.append(token)
+                    logger.info(
+                        "dead token %s..., pruning: %s", token[:12], result.exception
+                    )
+                else:
                     logger.warning(
                         "push failed for token %s...: %s", token[:12], result.exception
                     )
-            return response.success_count
+            return SendReport(sent=response.success_count, dead_tokens=dead)
 
         return await asyncio.to_thread(_send)
 

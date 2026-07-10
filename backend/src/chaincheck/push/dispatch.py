@@ -49,7 +49,16 @@ async def dispatch(
         if not tokens:
             continue
         try:
-            sent += await sender.send(tokens, message)
+            report = await sender.send(tokens, message)
         except Exception:
             logger.exception("push send failed for %s", message.corridor_id)
+            continue
+        sent += report.sent
+        for token in report.dead_tokens:
+            try:
+                await store.delete(token)
+            except Exception:
+                logger.exception("failed to prune dead token %s...", token[:12])
+        if report.dead_tokens:
+            logger.info("pruned %d dead subscriptions", len(report.dead_tokens))
     return sent
