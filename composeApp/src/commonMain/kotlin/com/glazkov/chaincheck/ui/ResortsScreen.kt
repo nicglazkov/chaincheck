@@ -60,6 +60,16 @@ fun ResortsScreen(
         if (state.error != null && state.resorts.isEmpty()) {
             Text("Couldn't load resorts: ${state.error}")
         }
+        val anyFreshSnow = state.resorts.any { (it.snow24hIn ?: 0.0) > 0.0 }
+        if (state.resorts.isNotEmpty() && !anyFreshSnow) {
+            Text(
+                "Off-season: resorts start posting snow reports with the first " +
+                    "storms, usually November. Season totals below are from last winter.",
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalPalette.current.subtleText,
+                modifier = Modifier.padding(vertical = 6.dp),
+            )
+        }
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 8.dp),
@@ -85,8 +95,8 @@ private fun ResortRow(resort: ResortReport, onShowOnMap: (MapFocus) -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text(resort.name, style = MaterialTheme.typography.titleMedium)
                 val subtitle = when {
-                    !resort.ok -> "report unavailable"
-                    resort.stale -> "stale report"
+                    !resort.ok -> "Couldn't reach resort right now"
+                    resort.stale -> "Showing last known report"
                     else -> listOfNotNull(
                         resort.baseDepthIn?.let {
                             val max = resort.baseDepthMaxIn
@@ -94,8 +104,9 @@ private fun ResortRow(resort: ResortReport, onShowOnMap: (MapFocus) -> Unit) {
                                 "base ${it.toInt()}-${max.toInt()}\""
                             } else "base ${it.toInt()}\""
                         },
-                        resort.seasonTotalIn?.let { "season ${it.toInt()}\"" },
-                    ).joinToString(" - ").ifBlank { "no snow data" }
+                        resort.seasonTotalIn?.let { "season ${it.toInt()}\" last winter" },
+                    ).joinToString(" · ")
+                        .ifBlank { "No snow report published yet (off-season)" }
                 }
                 Text(
                     subtitle,
