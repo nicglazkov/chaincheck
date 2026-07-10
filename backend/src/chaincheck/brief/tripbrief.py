@@ -22,6 +22,7 @@ from ca_roads.cache import TTLCache
 from chaincheck.brief import facts as facts_mod
 from chaincheck.brief import validate
 from chaincheck.brief.facts import TripFacts
+from chaincheck.brief.spendguard import BudgetExceeded, SpendGuard
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +62,10 @@ class BriefResult:
 
 
 class TripBriefer:
-    def __init__(self) -> None:
+    def __init__(self, guard: SpendGuard | None = None) -> None:
         self._cache = TTLCache()
         self._client = None
+        self._guard = guard or SpendGuard()
 
     def _anthropic(self):
         if self._client is None:
@@ -79,7 +81,7 @@ class TripBriefer:
     def available(self) -> bool:
         return bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
 
-    async def narrate(self, facts: TripFacts) -> BriefResult:
+    async def narrate(self, facts: TripFacts, client: str | None = None) -> BriefResult:
         plain = facts_mod.render_plain(facts)
         if not self.available():
             return BriefResult(text=plain, ai=False, model=None, cached=False, facts=facts)
@@ -126,6 +128,11 @@ class TripBriefer:
             (cached) when both drafts fail validation, so a bad-narration
             hour serves the plain rendering without regenerating per request.
             Only validated text or that empty marker ever enters the cache."""
+            # Charged here, not at the endpoint: cache hits and stale-serves
+            # cost nothing and stay unmetered. Raising keeps the guard out of
+            # the cache; a later allowed request generates normally.
+            if not self._guard.allow(client):
+                raise BudgetExceeded("trip brief generation budget exhausted")
             draft = await generate([{"role": "user", "content": user_prompt}])
             found = validate.problems(draft, facts)
             if not found:
