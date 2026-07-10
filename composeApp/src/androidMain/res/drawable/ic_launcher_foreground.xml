@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Placeholder launcher glyph (snowflake); final icon direction TBD with Nic. -->
+<!-- Summit Pin (logo X1): white map pin holding a Sierra ridgeline, morning
+     star above the summit. Content sits inside the adaptive safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:scaleX="2.2"
-        android:scaleY="2.2"
-        android:translateX="27.6"
-        android:translateY="27.6">
+        android:scaleX="0.62"
+        android:scaleY="0.62"
+        android:translateX="31.68"
+        android:translateY="31.68">
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M11,4h2v6.17l4.24,-4.24 1.41,1.41L13.41,12l5.24,4.66 -1.41,1.41L13,13.83V20h-2v-6.17l-4.24,4.24 -1.41,-1.41L10.59,12 5.35,7.34l1.41,-1.41L11,10.17V4z" />
+            android:pathData="M36,64 C36,64 13,42 13,27 A23,23 0 1 1 59,27 C59,42 36,64 36,64 Z" />
+        <path
+            android:fillColor="#0B63CE"
+            android:pathData="M21,36 L30,22 L37,31 L43,20 L51,36 Z" />
+        <path
+            android:fillColor="#FFD43B"
+            android:pathData="M47,13.5 a3,3 0 1 0 0.002,0 Z" />
     </group>
 </vector>

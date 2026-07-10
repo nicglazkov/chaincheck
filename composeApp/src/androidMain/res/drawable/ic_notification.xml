@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Snowflake-on-road glyph, monochrome for the status bar. -->
+<!-- Summit Pin notification glyph: alpha-only, ridgeline cut out of the pin
+     via even-odd fill so the shade renders it correctly. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -8,5 +9,6 @@
     android:tint="#FFFFFF">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M11,4h2v6.17l4.24,-4.24 1.41,1.41L13.41,12l5.24,4.66 -1.41,1.41L13,13.83V20h-2v-6.17l-4.24,4.24 -1.41,-1.41L10.59,12 5.35,7.34l1.41,-1.41L11,10.17V4z" />
+        android:fillType="evenOdd"
+        android:pathData="M12,21.3 C12,21.3 4.33,14 4.33,9 A7.67,7.67 0 1 1 19.67,9 C19.67,14 12,21.3 12,21.3 Z M7,12 L10,7.33 L12.33,10.33 L14.33,6.67 L17,12 Z" />
 </vector>
