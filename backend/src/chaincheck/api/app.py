@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
 import httpx
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel
 
 from chaincheck import __version__, rules
@@ -320,8 +320,18 @@ class TripBriefQuery(BaseModel):
     towing: bool = False
 
 
+def _client_ip(request: Request) -> str | None:
+    """Caller address for the brief spend guard. Cloud Run's front end puts
+    the real client first in X-Forwarded-For; locally there is no proxy and
+    the socket peer is the client itself."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip() or None
+    return request.client.host if request.client else None
+
+
 @app.post("/v1/tripbrief")
-async def trip_brief(query: TripBriefQuery) -> dict:
+async def trip_brief(query: TripBriefQuery, request: Request) -> dict:
     st = _state()
     if query.corridor_id not in {p.corridor_id for p in PASSES}:
         raise HTTPException(422, f"no pass forecast for corridor '{query.corridor_id}'")
@@ -351,7 +361,7 @@ async def trip_brief(query: TripBriefQuery) -> dict:
         outlook=outlook,
         vehicle=vehicle,
     )
-    result = await st.briefer.narrate(facts)
+    result = await st.briefer.narrate(facts, client=_client_ip(request))
     return {
         "brief": result.text,
         "ai": result.ai,
