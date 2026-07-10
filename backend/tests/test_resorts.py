@@ -166,3 +166,30 @@ async def test_registry_disable_env(monkeypatch):
         registry = resorts.ResortRegistry(client)
         assert await registry.report("heavenly") is None
         assert await registry.report("donner") is None
+
+
+_VAIL_SNOW_JSON = json.dumps({
+    "OverallSnowConditions": "Powder",
+    "OvernightSnowfall": {"Inches": "4", "Centimeters": "10"},
+    "TwentyFourHourSnowfall": {"Inches": "9", "Centimeters": "23"},
+    "FortyEightHourSnowfall": {"Inches": "15", "Centimeters": "38"},
+    "SevenDaySnowfall": {"Inches": "31", "Centimeters": "79"},
+    "BaseDepth": {"Inches": "52", "Centimeters": "132"},
+    "CurrentSeason": {"Inches": "220", "Centimeters": "558"},
+    "LastUpdatedText": "Updated",
+})
+VAIL_SNOW_HTML = f"<script>FR.snowReportData = {_VAIL_SNOW_JSON};</script>"
+
+
+def test_vail_snow_report_parse():
+    snow = vail.parse_snow_report(VAIL_SNOW_HTML)
+    assert snow["snow_overnight_in"] == 4.0
+    assert snow["snow_24h_in"] == 9.0
+    assert snow["snow_48h_in"] == 15.0
+    assert snow["base_depth_in"] == 52.0
+    assert snow["season_total_in"] == 220.0
+
+
+def test_vail_empty_lift_list_is_offseason_not_error():
+    html = "<script>FR.TerrainStatusFeed = {\"Lifts\":[]};</script>"
+    assert vail.parse_terrain_feed(html) == (0, 0)

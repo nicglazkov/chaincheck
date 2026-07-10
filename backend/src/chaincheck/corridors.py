@@ -92,6 +92,40 @@ CORRIDORS: tuple[Corridor, ...] = (
     ),
 )
 
+def _load_snapped_geometry() -> None:
+    """Replace hand-traced segments with road-snapped geometry when the baked
+    data file is present (generated once via OSRM; see docs in repo)."""
+    global CORRIDORS
+    import json
+    from importlib import resources
+
+    try:
+        raw = (
+            resources.files("chaincheck").joinpath("data/corridor_geometry.json").read_text()
+        )
+    except (FileNotFoundError, ModuleNotFoundError):
+        return
+    geometry = json.loads(raw)
+    updated = []
+    for corridor in CORRIDORS:
+        segs = geometry.get(corridor.id)
+        if segs:
+            corridor = Corridor(
+                id=corridor.id,
+                name=corridor.name,
+                route_number=corridor.route_number,
+                display_route=corridor.display_route,
+                description=corridor.description,
+                segments=tuple(
+                    tuple((lat, lon) for lat, lon in seg) for seg in segs
+                ),
+            )
+        updated.append(corridor)
+    CORRIDORS = tuple(updated)
+
+
+_load_snapped_geometry()
+
 CORRIDORS_BY_ID: dict[str, Corridor] = {c.id: c for c in CORRIDORS}
 _ROUTE_TO_CORRIDOR: dict[str, Corridor] = {c.route_number: c for c in CORRIDORS}
 

@@ -119,7 +119,8 @@ actual fun PlatformMap(
         }
 
         // Corridor highways drawn as tier-colored lines: the road itself
-        // answers "which line is my route, and is it clear".
+        // answers "which line is my route, and is it clear". A shield chip
+        // at the longest segment's midpoint names each line.
         data.corridors.forEach { corridor ->
             val lineColor = TierColors.forTier(corridor.tier, palette)
             corridor.segments.forEach { segment ->
@@ -131,6 +132,20 @@ actual fun PlatformMap(
                         geodesic = true,
                         zIndex = 1f,
                     )
+                }
+            }
+            val longest = corridor.segments.maxByOrNull { it.size }
+            if (longest != null && longest.size >= 2) {
+                val mid = longest[longest.size / 2]
+                MarkerComposable(
+                    keys = arrayOf("shield", corridor.id, corridor.tierLabel, palette.isDark),
+                    state = MarkerState(LatLng(mid.lat, mid.lon)),
+                    title = corridor.name,
+                    snippet = "${corridor.tierLabel} right now",
+                    anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
+                    zIndex = 2f,
+                ) {
+                    RouteShield(corridor.route, corridor.tierLabel, lineColor, palette)
                 }
             }
         }
@@ -219,6 +234,32 @@ actual fun PlatformMap(
                 PassChip(pass.elevationFt, palette)
             }
         }
+    }
+}
+
+@Composable
+private fun RouteShield(
+    route: String,
+    tierLabel: String,
+    tierColor: Color,
+    palette: ChainCheckPalette,
+) {
+    val bg = if (palette.isDark) Color(0xF2101B2E) else Color(0xF7FFFFFF)
+    val fg = if (palette.isDark) Color(0xFFEEF3FB) else Color(0xFF16202B)
+    androidx.compose.foundation.layout.Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .background(bg, RoundedCornerShape(50))
+            .border(1.5.dp, tierColor, RoundedCornerShape(50))
+            .padding(horizontal = 9.dp, vertical = 3.dp),
+    ) {
+        Text(route, color = fg, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+        Text(
+            "  $tierLabel",
+            color = tierColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 

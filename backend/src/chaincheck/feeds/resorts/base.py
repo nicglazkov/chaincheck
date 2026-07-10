@@ -9,7 +9,9 @@ an honest User-Agent, are polled at a gentle cadence (the registry caches
 
 from __future__ import annotations
 
+import asyncio
 import re
+import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -97,3 +99,33 @@ def strip_tags(html: str) -> str:
 
     text = re.sub(r"<[^>]+>", " ", html)
     return re.sub(r"\s+", " ", html_mod.unescape(text)).strip()
+
+
+async def _curl_text(url: str) -> str:
+    """Fetch with the system curl binary."""
+    proc = await asyncio.create_subprocess_exec(
+        "curl", "-sfL", "-m", "30", "-H", f"User-Agent: {SCRAPER_USER_AGENT}", url,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    stdout, _ = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f"curl exited {proc.returncode} for {url}")
+    return stdout.decode("utf-8", errors="replace")
+
+
+async def get_page_text(client: httpx.AsyncClient, url: str) -> str:
+    """GET a page, falling back to curl when a CDN 403s httpx's TLS stack.
+
+    Cloudflare challenges httpx's client-hello on some resort sites while
+    accepting stock curl. Same honest User-Agent either way; curl is simply
+    a different mainstream HTTP client, not a disguise.
+    """
+    try:
+        resp = await client.get(url, headers=headers(), timeout=30.0)
+        resp.raise_for_status()
+        return resp.text
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 403 and shutil.which("curl"):
+            return await _curl_text(url)
+        raise
