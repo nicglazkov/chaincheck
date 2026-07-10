@@ -169,6 +169,7 @@ actual fun PlatformMap(
                 Marker(
                     state = MarkerState(LatLng(closure.begin.lat, closure.begin.lon)),
                     icon = closureDot,
+                    anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
                     title = "Closure: ${closure.location}",
                     snippet = listOfNotNull(
                         "${closure.route} ${closure.direction}",
@@ -181,6 +182,7 @@ actual fun PlatformMap(
                 Marker(
                     state = MarkerState(LatLng(incident.lat, incident.lon)),
                     icon = incidentDot,
+                    anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
                     title = incident.type.ifBlank { "CHP incident" },
                     snippet = incident.location,
                 )
@@ -190,6 +192,7 @@ actual fun PlatformMap(
                 MarkerComposable(
                     keys = arrayOf(control.tierLabel, palette.isDark),
                     state = MarkerState(LatLng(control.lat, control.lon)),
+                    anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
                     title = "${control.tierLabel} · ${control.location}",
                     snippet = "${control.route} ${control.direction} · tap for navigation",
                     onInfoWindowClick = {
@@ -204,8 +207,9 @@ actual fun PlatformMap(
         if (layers.resorts) {
             data.resorts.forEach { resort ->
                 MarkerComposable(
-                    keys = arrayOf(resort.id, resort.snow24hIn ?: -1.0, palette.isDark),
+                    keys = arrayOf(resort.id, resort.snow24hIn ?: -1.0, resort.ok, palette.isDark),
                     state = MarkerState(LatLng(resort.lat, resort.lon)),
+                    anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
                     title = resort.name,
                     snippet = buildString {
                         resort.snow24hIn?.let { append("24h ${it}\" · ") }
@@ -213,7 +217,11 @@ actual fun PlatformMap(
                         val total = resort.liftsTotal
                         if (open != null || total != null) {
                             append("lifts ${open ?: "?"}/${total ?: "?"}")
-                        } else if (!resort.ok) append("report unavailable")
+                        } else if (!resort.ok) {
+                            append("couldn't reach resort")
+                        } else {
+                            append("off-season · no snow report yet")
+                        }
                     },
                     onInfoWindowClick = {
                         onNavigateTo(resort.lat, resort.lon, resort.name)
@@ -228,6 +236,7 @@ actual fun PlatformMap(
             MarkerComposable(
                 keys = arrayOf(pass.id, palette.isDark),
                 state = MarkerState(LatLng(pass.lat, pass.lon)),
+                anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
                 title = "${pass.name} · ${pass.elevationFt} ft",
                 snippet = pass.route,
             ) {
