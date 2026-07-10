@@ -44,15 +44,15 @@ ChainCheck puts the whole picture on one screen and pushes you an alert the mome
 
 ## What it does
 
-| | Feature | Details |
-|---|---|---|
-| 🎯 | **The answer, first** | Your route's chain status the moment the app opens: R0 to R3 or Closed, with what that means for your exact car |
-| 🗺️ | **A real map** | Every Sierra crossing drawn on its actual highway geometry and colored by its live control level. 80 Caltrans cameras, closures, CHP incidents, resorts, passes. Tap anything anywhere in the app to see it here |
-| 🔔 | **Push alerts** | Watch a route, get a notification the minute a tier changes, a closure goes up, or a storm warning lands on your pass. Nothing promotional, ever |
-| 🌨️ | **Storm timing** | NWS pass forecasts plus hourly snow accumulation, split into "before you leave" and "while you are driving" |
-| ⛷️ | **Resort snow** | 24 hour totals, base depth, and lifts open across 11 Tahoe resorts, with honest off-season labeling instead of fake zeros |
-| 🤖 | **AI trip brief** | A language model writes the summary but can only narrate verified facts. Every brief is validated: no dropped controls, no invented road states. If validation fails, a deterministic plain-text brief ships instead |
-| 🧤 | **Built for mountains** | Offline caching with honest "as of" timestamps, glove-sized touch targets, and a 60 second interactive guide for first-timers |
+| Feature | Details |
+|---|---|
+| **The answer, first** | Your route's chain status the moment the app opens: R0 to R3 or Closed, with what that means for your exact car |
+| **A real map** | Every Sierra crossing drawn on its actual highway geometry and colored by its live control level. 80 Caltrans cameras, closures, CHP incidents, resorts, passes. Tap anything anywhere in the app to see it here |
+| **Push alerts** | Watch a route, get a notification the minute a tier changes, a closure goes up, or a storm warning lands on your pass. Nothing promotional, ever |
+| **Storm timing** | NWS pass forecasts plus hourly snow accumulation, split into "before you leave" and "while you are driving" |
+| **Resort snow** | 24 hour totals, base depth, and lifts open across 11 Tahoe resorts, with honest off-season labeling instead of fake zeros |
+| **AI trip brief** | A language model writes the summary but can only narrate verified facts. Every brief is validated: no dropped controls, no invented road states. If validation fails, a deterministic plain-text brief ships instead |
+| **Built for mountains** | Offline caching with honest "as of" timestamps, glove-sized touch targets, and a 60 second interactive guide for first-timers |
 
 > [!IMPORTANT]
 > **The chain rules are code, not prose.** R1, R2, and R3 vehicle requirements are
@@ -62,14 +62,38 @@ ChainCheck puts the whole picture on one screen and pushes you an alert the mome
 
 ## How it works
 
-```
-Caltrans district feeds ─┐
-CHP dispatch XML ────────┤   ┌──────────────┐    ┌──────────────────┐
-NWS + Open-Meteo ────────┼──▶│  FastAPI on  │───▶│ Compose          │
-11 resort adapters ──────┘   │  Cloud Run   │    │ Multiplatform    │
-                             │              │    │ app (Android,    │
-Cloud Scheduler ──▶ poll ──▶ │ differ ─▶ FCM ───▶│ iOS in progress) │
-                             └──────────────┘    └──────────────────┘
+```mermaid
+flowchart LR
+    subgraph sources["Public data sources"]
+        CT["Caltrans district feeds"]
+        CHP["CHP dispatch XML"]
+        WX["NWS + Open-Meteo"]
+        RES["11 resort adapters"]
+    end
+
+    subgraph backend["Backend · FastAPI on Cloud Run"]
+        FEED["ca_roads feed layer"]
+        SNAP["Sierra snapshot"]
+        DIFF["Differ: tier changes,<br/>closures, storm warnings"]
+        API["JSON API"]
+        FCM["FCM push"]
+    end
+
+    subgraph clients["Clients"]
+        APP["Compose Multiplatform app<br/>Android · iOS in progress"]
+    end
+
+    CT --> FEED
+    CHP --> FEED
+    FEED --> SNAP
+    WX --> SNAP
+    RES --> API
+    SNAP --> API
+    SNAP --> DIFF
+    SCHED["Cloud Scheduler<br/>every 2 min in storms"] --> DIFF
+    DIFF --> FCM
+    API --> APP
+    FCM --> APP
 ```
 
 <details>
