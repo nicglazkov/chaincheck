@@ -13,7 +13,7 @@ import httpx
 from chaincheck.feeds.resorts.base import (
     ResortAdapter,
     ResortReport,
-    headers,
+    get_page_text,
     parse_inches,
     strip_tags,
 )
@@ -55,6 +55,4 @@ class DiamondPeakAdapter(ResortAdapter):
     name = "Diamond Peak"
 
     async def fetch(self, client: httpx.AsyncClient) -> ResortReport:
-        resp = await client.get(PAGE_URL, headers=headers(), timeout=30.0)
-        resp.raise_for_status()
-        return parse_page(resp.text)
+        return parse_page(await get_page_text(client, PAGE_URL))

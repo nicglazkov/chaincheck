@@ -1,7 +1,8 @@
 FROM python:3.12-slim
 
-# git is needed to install the pinned ca-roads-mcp git dependency.
-RUN apt-get update && apt-get install -y --no-install-recommends git \
+# git installs the pinned ca-roads-mcp dependency; curl is the fallback
+# HTTP client for resort sites whose CDN rejects httpx's TLS stack.
+RUN apt-get update && apt-get install -y --no-install-recommends git curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
