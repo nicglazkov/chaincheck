@@ -51,6 +51,7 @@ fun App(repository: Repository) {
         var tab by remember { mutableStateOf(Tab.Home) }
         var openCorridor by remember { mutableStateOf<String?>(null) }
         var mapFocus by remember { mutableStateOf<MapFocus?>(null) }
+        var showGuide by remember { mutableStateOf(false) }
         var disclaimerSeen by remember { mutableStateOf(repository.disclaimerAccepted) }
         val showOnMap: (MapFocus) -> Unit = {
             mapFocus = it
@@ -90,6 +91,7 @@ fun App(repository: Repository) {
                             onClick = {
                                 tab = item
                                 openCorridor = null
+                                showGuide = false
                             },
                             icon = {
                                 Icon(
@@ -112,6 +114,11 @@ fun App(repository: Repository) {
         ) { padding ->
             val modifier = Modifier.padding(padding)
             when {
+                showGuide -> GuideScreen(
+                    onBack = { showGuide = false },
+                    modifier = modifier,
+                )
+
                 openCorridor != null -> RouteDetailScreen(
                     corridorId = openCorridor!!,
                     repository = repository,
@@ -125,6 +132,7 @@ fun App(repository: Repository) {
                     onOpenRoute = { openCorridor = it },
                     onShowOnMap = showOnMap,
                     onQuickNav = { tab = it },
+                    onOpenGuide = { showGuide = true },
                     modifier = modifier,
                 )
 

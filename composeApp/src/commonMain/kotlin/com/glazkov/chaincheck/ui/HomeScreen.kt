@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +42,7 @@ fun HomeScreen(
     onOpenRoute: (String) -> Unit,
     onShowOnMap: (MapFocus) -> Unit = {},
     onQuickNav: (Tab) -> Unit = {},
+    onOpenGuide: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by repository.home.collectAsState()
@@ -48,7 +53,48 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("ChainCheck", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("ChainCheck", style = MaterialTheme.typography.headlineMedium)
+            IconButton(onClick = onOpenGuide) {
+                Icon(
+                    Icons.AutoMirrored.Filled.HelpOutline,
+                    contentDescription = "How chain controls work",
+                    tint = palette.accent,
+                )
+            }
+        }
+        var guideCardDismissed by remember {
+            mutableStateOf(repository.guideCardDismissed)
+        }
+        if (!guideCardDismissed) {
+            CcCard(Modifier.fillMaxWidth().clickable { onOpenGuide() }) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "New to chain controls?",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            "60 seconds on what R0-R3 mean and what your car needs.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = {
+                        repository.guideCardDismissed = true
+                        guideCardDismissed = true
+                    }) { Text("Dismiss") }
+                }
+            }
+        }
 
         val summary = state.summary
         if (summary == null) {

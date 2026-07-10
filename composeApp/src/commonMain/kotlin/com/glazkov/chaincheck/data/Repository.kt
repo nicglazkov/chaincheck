@@ -45,6 +45,10 @@ class Repository(
         get() = settings.getBoolean(KEY_DISCLAIMER, false)
         set(value) = settings.putBoolean(KEY_DISCLAIMER, value)
 
+    var guideCardDismissed: Boolean
+        get() = settings.getBoolean(KEY_GUIDE_CARD, false)
+        set(value) = settings.putBoolean(KEY_GUIDE_CARD, value)
+
     var selectedCorridor: String
         get() = settings.getString(KEY_SELECTED, "i80")
         set(value) = settings.putString(KEY_SELECTED, value)
@@ -125,6 +129,7 @@ class Repository(
         const val KEY_RESORTS = "cache.resorts"
         const val KEY_WATCHED = "alerts.watched"
         const val KEY_DISCLAIMER = "disclaimer.accepted"
+        const val KEY_GUIDE_CARD = "guide.card.dismissed"
         const val KEY_SELECTED = "home.selected"
     }
 }
