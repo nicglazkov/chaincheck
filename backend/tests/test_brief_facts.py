@@ -207,6 +207,31 @@ def test_validator_tolerates_slash_reformatting():
     )
 
 
+def test_validator_tolerates_expanded_road_abbreviations():
+    from chaincheck.brief import validate
+
+    # The live failure that motivated this: facts said "Drum Forebay Rd",
+    # the model wrote "Drum Forebay Road", and the AI brief was discarded.
+    assert validate._mentions(
+        "a lane closure at drum forebay road for bridge work.",
+        "Drum Forebay Rd",
+    )
+    # And the reverse direction: abbreviated in the brief, spelled out in facts.
+    assert validate._mentions(
+        "expect work at donner pass rd near the summit.",
+        "Donner Pass Road",
+    )
+    assert validate._mentions(
+        "chains staged along old hwy 40.",
+        "Old Highway 40",
+    )
+    # Different roads still fail.
+    assert not validate._mentions(
+        "a closure at drum forebay road.",
+        "Drum Canyon Rd",
+    )
+
+
 def test_quiet_day_renders_r0():
     snapshot = snapshot_with({"us50": Tier.R0})
     facts = brief_facts.assemble(
