@@ -31,7 +31,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build debug APK
         run: ./gradlew :composeApp:assembleDebug --console=plain
       - name: Unit tests
