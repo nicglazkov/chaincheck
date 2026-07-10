@@ -91,3 +91,26 @@ async def test_dispatch_no_subscribers_sends_nothing():
     sent = await dispatch.dispatch(events, store, sender)
     assert sent == 0
     assert sender.sent == []
+
+
+async def test_dispatch_prunes_dead_tokens():
+    from chaincheck.push.fcm import PushMessage, SendReport
+
+    store = InMemorySubscriptionStore()
+    await store.upsert("live-token", ["i80"])
+    await store.upsert("dead-token", ["i80"])
+
+    class DeadTokenSender:
+        async def send(self, tokens: list[str], message: PushMessage) -> SendReport:
+            return SendReport(
+                sent=len(tokens) - 1, dead_tokens=["dead-token"]
+            )
+
+    _, state = differ.diff(differ.WatchState.empty(), snapshot_with({"i80": Tier.R0}))
+    events, _ = differ.diff(state, snapshot_with({"i80": Tier.R2}))
+    sent = await dispatch.dispatch(events, store, DeadTokenSender())
+
+    assert sent == 1
+    # The uninstalled device is gone; the live one remains.
+    assert await store.get("dead-token") is None
+    assert await store.tokens_for_corridor("i80") == ["live-token"]
