@@ -41,8 +41,9 @@ set of verified facts about one route. Rules, absolute:
 - Never mention a control level that does not appear in the facts - not even
   hypothetically ("could go to R2") or as an explanation of the scale.
 - Every active chain control point and every listed closure MUST appear in
-  the brief by its exact location name - do not summarize closures into a
-  count or "several construction zones". Name weather alerts exactly as given.
+  the brief by its exact location name, copied verbatim including
+  abbreviations like Rd or Hwy - do not summarize closures into a count or
+  "several construction zones". Name weather alerts exactly as given.
 - Never suggest the driver will be fine without chains or that conditions are
   safe. Requirements and conditions only; the decision is the driver's.
 - Plain prose only: no markdown, no headers, no bold, no bullet lists.

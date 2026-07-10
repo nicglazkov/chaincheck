@@ -26,16 +26,41 @@ BANNED_PHRASES = (
 TIER_TOKENS = ("R0", "R1", "R2", "R3")
 
 
+# Caltrans feeds abbreviate road suffixes; the model tends to write them out
+# ("Drum Forebay Rd" -> "Drum Forebay Road"). Both spellings name the same
+# place, so both sides are canonicalized before comparing.
+_ROAD_SUFFIXES = {
+    "rd": "road",
+    "st": "street",
+    "ave": "avenue",
+    "blvd": "boulevard",
+    "hwy": "highway",
+    "dr": "drive",
+    "ln": "lane",
+    "ct": "court",
+    "pkwy": "parkway",
+}
+_SUFFIX_RE = re.compile(
+    r"\b(" + "|".join(_ROAD_SUFFIXES) + r")\b\.?", flags=re.IGNORECASE
+)
+
+
+def _canonical(text: str) -> str:
+    expanded = _SUFFIX_RE.sub(lambda m: _ROAD_SUFFIXES[m.group(1).lower()], text)
+    return re.sub(r"\s+", " ", expanded.lower())
+
+
 def _mentions(lowered_text: str, location: str) -> bool:
-    """Whether a location is named, tolerating slash/whitespace reformatting.
+    """Whether a location is named, tolerating slash/whitespace reformatting
+    and abbreviation expansion.
 
     "Five Mile Rd / Paul Bunyon Rd" counts as mentioned when each component
-    name appears, so "Five Mile Rd/Paul Bunyon Rd" and reordered forms pass;
+    name appears, so "Five Mile Road/Paul Bunyon Rd" and reordered forms pass;
     a brief that names neither road still fails.
     """
-    squeezed = re.sub(r"\s+", " ", lowered_text)
-    for part in location.lower().split("/"):
-        part = re.sub(r"\s+", " ", part).strip()
+    squeezed = _canonical(lowered_text)
+    for part in location.split("/"):
+        part = _canonical(part).strip()
         if part and part not in squeezed:
             return False
     return True
