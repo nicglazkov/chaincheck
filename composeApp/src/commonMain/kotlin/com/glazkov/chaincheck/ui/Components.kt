@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /** The one card. Glass on Summit, bordered white with soft lift on Sierra. */
 @Composable
@@ -159,7 +161,7 @@ fun FreshnessLine(
                 )
                 if (error != null) {
                     Text(
-                        "Refresh failed: ${error.substringBefore(" [").take(80)}",
+                        humanizeError(error),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -182,4 +184,46 @@ internal fun freshnessText(asOfIso: String?, stale: Boolean): String {
         else -> "${minutes / (24 * 60)} d ago"
     }
     return "Updated $age$suffix"
+}
+
+/** "1 closure", "7 closures" - counts read as words, not database fields. */
+internal fun countLabel(count: Int, singular: String): String =
+    if (count == 1) "1 $singular" else "$count ${singular}s"
+
+/**
+ * Raw transport exceptions ("Unable to resolve host chaincheck-api...") are
+ * for logs, not people. Everything the UI shows about a failed refresh goes
+ * through here.
+ */
+internal fun humanizeError(raw: String?): String {
+    val lowered = raw?.lowercase() ?: return "Couldn't refresh right now."
+    return when {
+        "unable to resolve host" in lowered ||
+            "no address" in lowered ||
+            "network is unreachable" in lowered ||
+            "failed to connect" in lowered ||
+            "connection refused" in lowered ->
+            "You're offline - showing the last saved update."
+        "timeout" in lowered || "timed out" in lowered ->
+            "The connection timed out - will keep trying."
+        else -> "Couldn't refresh right now - will keep trying."
+    }
+}
+
+private val MONTHS =
+    listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+/** ISO instant -> "Jul 10, 5:11 PM" in the device's own time zone. */
+internal fun formatLocalTime(iso: String?): String {
+    val instant = iso?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        ?: return "unknown"
+    val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val hour12 = when (val h = local.hour % 12) {
+        0 -> 12
+        else -> h
+    }
+    val ampm = if (local.hour < 12) "AM" else "PM"
+    val minute = local.minute.toString().padStart(2, '0')
+    return "${MONTHS[local.monthNumber - 1]} ${local.dayOfMonth}, $hour12:$minute $ampm"
 }

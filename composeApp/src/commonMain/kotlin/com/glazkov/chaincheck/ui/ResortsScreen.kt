@@ -58,13 +58,14 @@ fun ResortsScreen(
             }
         }
         if (state.error != null && state.resorts.isEmpty()) {
-            Text("Couldn't load resorts: ${state.error}")
+            Text(humanizeError(state.error))
         }
         val anyFreshSnow = state.resorts.any { (it.snow24hIn ?: 0.0) > 0.0 }
         if (state.resorts.isNotEmpty() && !anyFreshSnow) {
             Text(
                 "Off-season: resorts start posting snow reports with the first " +
-                    "storms, usually November. Season totals below are from last winter.",
+                    "storms, usually November. Bases, season totals, and lift " +
+                    "counts below are from each resort's last posted report.",
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalPalette.current.subtleText,
                 modifier = Modifier.padding(vertical = 6.dp),
@@ -123,9 +124,11 @@ private fun ResortRow(resort: ResortReport, onShowOnMap: (MapFocus) -> Unit) {
                 Text("24h", style = MaterialTheme.typography.bodySmall)
                 val open = resort.liftsOpen
                 val total = resort.liftsTotal
-                if (open != null || total != null) {
+                // Only claim lift counts we actually have; "lifts ?/5" is
+                // developer-speak and "0/0" is noise.
+                if (open != null && total != null && total > 0) {
                     Text(
-                        "lifts ${open ?: "?"}/${total ?: "?"}",
+                        "lifts $open/$total",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }

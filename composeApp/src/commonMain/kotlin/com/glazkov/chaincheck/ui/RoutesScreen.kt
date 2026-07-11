@@ -17,11 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -83,17 +85,22 @@ fun RoutesScreen(
                         )
                         if (corridor.closures + corridor.incidents > 0) {
                             Text(
-                                "${corridor.closures} closures - " +
-                                    "${corridor.incidents} incidents",
+                                countLabel(corridor.closures, "closure") + " - " +
+                                    countLabel(corridor.incidents, "incident"),
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
                     }
                     val pass = passByCorridor[corridor.id]
-                    if (pass?.lat != null && pass.lon != null) {
-                        IconButton(onClick = {
-                            onShowOnMap(MapFocus(pass.lat, pass.lon, 10f, corridor.name))
-                        }) {
+                    val focus = if (pass?.lat != null && pass.lon != null) {
+                        MapFocus(pass.lat, pass.lon, 10f, corridor.name)
+                    } else {
+                        CORRIDOR_CENTERS[corridor.id]?.let { (lat, lon) ->
+                            MapFocus(lat, lon, 10f, corridor.name)
+                        }
+                    }
+                    if (focus != null) {
+                        IconButton(onClick = { onShowOnMap(focus) }) {
                             Icon(
                                 Icons.Filled.Map,
                                 contentDescription = "Show ${corridor.name} on map",
@@ -107,6 +114,42 @@ fun RoutesScreen(
     }
 }
 
+/**
+ * CHP dispatch shorthand ("1181-Trfc Collision-Minor Inj") reads like radio
+ * chatter. Strip the code and expand the abbreviations drivers won't know.
+ */
+private val CHP_ABBREVIATIONS = mapOf(
+    "Trfc" to "Traffic",
+    "Veh" to "Vehicle",
+    "Injs" to "Injuries",
+    "Inj" to "Injury",
+    "Enrt" to "En Route",
+    "Rte" to "Route",
+    "Hwy" to "Highway",
+    "Rdwy" to "Roadway",
+    "Anml" to "Animal",
+    "Med" to "Medical",
+    "Maint" to "Maintenance",
+)
+
+internal fun humanizeIncidentType(raw: String): String {
+    var text = raw.replace(Regex("^\\d+[A-Za-z]?\\s*-\\s*"), "")
+    for ((abbr, full) in CHP_ABBREVIATIONS) {
+        text = text.replace(Regex("\\b$abbr\\b"), full)
+    }
+    return text.replace(Regex("\\s*-\\s*"), " · ")
+}
+
+/**
+ * Fallback map targets for corridors whose pass has no coordinates, so every
+ * route row gets the same "show me" affordance. Midpoints of the baked OSM
+ * geometry; corridors are static so these are too.
+ */
+private val CORRIDOR_CENTERS = mapOf(
+    "sr20" to (39.2707 to -120.8558),
+    "sr28" to (39.2048 to -120.0748),
+)
+
 @Composable
 fun RouteDetailScreen(
     corridorId: String,
@@ -117,9 +160,14 @@ fun RouteDetailScreen(
 ) {
     var detail by remember { mutableStateOf<CorridorDetail?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var attempt by remember { mutableStateOf(0) }
+    val showAllPoints = remember { mutableStateOf(false) }
     val api = remember { ChainCheckApi() }
+    val cachedCorridor = repository.home.collectAsState().value
+        .summary?.corridors?.firstOrNull { it.id == corridorId }
 
-    LaunchedEffect(corridorId) {
+    LaunchedEffect(corridorId, attempt) {
+        error = null
         runCatching { api.routeDetail(corridorId) }
             .onSuccess { detail = it }
             .onFailure { error = it.message ?: "load failed" }
@@ -131,15 +179,38 @@ fun RouteDetailScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
             Text(
-                detail?.name ?: corridorId,
+                detail?.name ?: cachedCorridor?.name ?: "Route",
                 style = MaterialTheme.typography.titleLarge,
             )
         }
 
         val loaded = detail
         when {
-            error != null -> Text("Couldn't load: $error")
-            loaded == null -> Text("Loading...")
+            loaded == null && error != null -> Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Offline still answers the headline question from the last
+                // saved summary; only the checkpoint list needs a connection.
+                if (cachedCorridor != null) {
+                    Text(
+                        "${cachedCorridor.tierLabel}: ${cachedCorridor.tierMeaning}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TierColors.forTier(cachedCorridor.tier),
+                    )
+                    Text(
+                        "From your last update. Checkpoint details need a connection.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(humanizeError(error), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { attempt++ }) { Text("Try again") }
+            }
+            loaded == null -> Row(
+                Modifier.fillMaxWidth().padding(top = 24.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) { CircularProgressIndicator() }
             else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     Text(
@@ -149,7 +220,7 @@ fun RouteDetailScreen(
                         color = TierColors.forTier(loaded.tier),
                     )
                     Text(
-                        "As of ${loaded.feed.asOf?.take(16)?.replace("T", " ") ?: "unknown"}" +
+                        "As of ${formatLocalTime(loaded.feed.asOf)}" +
                             if (loaded.feed.stale) " (cached)" else "",
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -157,27 +228,51 @@ fun RouteDetailScreen(
                 }
                 if (loaded.controlPoints.isNotEmpty()) {
                     item { Text("Chain control points", style = MaterialTheme.typography.titleSmall) }
-                    items(loaded.controlPoints) { point ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable {
-                                onShowOnMap(MapFocus(point.lat, point.lon, 13f, point.location))
-                            }.padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                point.tierLabel,
-                                color = TierColors.forTier(point.tier),
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.width(64.dp),
-                            )
-                            Column {
-                                Text("${point.location} (${point.direction})")
-                                if (point.description.isNotBlank()) {
-                                    Text(
-                                        point.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                    // A quiet corridor collapses its checkpoint list: one calm
+                    // sentence beats three screens of identical "no controls".
+                    val allClear = loaded.controlPoints.all { it.tier == 0 }
+                    if (allClear && !showAllPoints.value) {
+                        item {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    "All ${loaded.controlPoints.size} checkpoints " +
+                                        "on this route are clear right now.",
+                                    modifier = Modifier.weight(1f),
+                                )
+                                TextButton(onClick = { showAllPoints.value = true }) {
+                                    Text("Show them")
+                                }
+                            }
+                        }
+                    } else {
+                        items(loaded.controlPoints) { point ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable {
+                                    onShowOnMap(MapFocus(point.lat, point.lon, 13f, point.location))
+                                }.padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    point.tierLabel,
+                                    color = TierColors.forTier(point.tier),
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.width(64.dp),
+                                )
+                                Column {
+                                    Text("${point.location} (${point.direction})")
+                                    // R0's "nothing happening" text is implied
+                                    // by the label; repeating it row after row
+                                    // buries the real information.
+                                    if (point.description.isNotBlank() && point.tier != 0) {
+                                        Text(
+                                            point.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -220,7 +315,7 @@ fun RouteDetailScreen(
                                 onShowOnMap(MapFocus(incident.lat, incident.lon, 13f, incident.location))
                             }.padding(vertical = 2.dp),
                         ) {
-                            Text(incident.type)
+                            Text(humanizeIncidentType(incident.type))
                             Text(
                                 "${incident.location} - ${incident.area}",
                                 style = MaterialTheme.typography.bodySmall,

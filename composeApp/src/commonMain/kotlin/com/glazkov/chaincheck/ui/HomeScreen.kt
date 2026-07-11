@@ -101,7 +101,7 @@ fun HomeScreen(
             if (state.loading) {
                 CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
             } else {
-                Text(state.error ?: "No data yet.")
+                Text(if (state.error != null) humanizeError(state.error) else "No data yet.")
                 TextButton(onClick = { repository.refreshHome() }) { Text("Retry") }
             }
             return@Column
@@ -171,12 +171,12 @@ fun HomeScreen(
                         Spacer(Modifier.height(6.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             Text(
-                                "${corridor.closures} closures",
+                                countLabel(corridor.closures, "closure"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.subtleText,
                             )
                             Text(
-                                "${corridor.incidents} incidents",
+                                countLabel(corridor.incidents, "incident"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.subtleText,
                             )

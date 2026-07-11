@@ -367,16 +367,27 @@ private fun requestLocationPermissionOnce(onResult: (Boolean) -> Unit) {
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { grants -> onResult(grants.values.any { it }) }
     LaunchedEffect(Unit) {
-        if (!hasLocationPermission()) {
-            launcher.launch(
-                arrayOf(
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                    android.Manifest.permission.ACCESS_FINE_LOCATION,
-                )
-            )
-        } else {
+        if (hasLocationPermission()) {
             onResult(true)
+            return@LaunchedEffect
         }
+        // Ask exactly once. Re-prompting on every map open nags people who
+        // said no; the map works fine without location, and Android settings
+        // can always grant it later.
+        val prefs = navContext?.getSharedPreferences(
+            "chaincheck", android.content.Context.MODE_PRIVATE
+        )
+        if (prefs?.getBoolean("location.asked", false) == true) {
+            onResult(false)
+            return@LaunchedEffect
+        }
+        prefs?.edit()?.putBoolean("location.asked", true)?.apply()
+        launcher.launch(
+            arrayOf(
+                android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+            )
+        )
     }
 }
 
