@@ -20,6 +20,15 @@ updates:
       - dependency-name: "org.jetbrains.kotlin.*"
       - dependency-name: "com.android.application"
       - dependency-name: "com.android.library"
+      # These ship compiled against newer Kotlin than the pin and fail the
+      # build with internal compiler errors; patches only until the
+      # toolchain upgrade lands (October).
+      - dependency-name: "io.ktor:*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "io.coil-kt.coil3:*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-datetime"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
