@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.Clock
@@ -59,11 +61,11 @@ fun CcCard(
 fun TierRing(tier: Int, label: String, modifier: Modifier = Modifier) {
     val palette = LocalPalette.current
     val color = TierColors.forTier(tier, palette)
-    Box(modifier = modifier.size(148.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.size(160.dp), contentAlignment = Alignment.Center) {
         if (palette.isDark) {
             Box(
                 Modifier
-                    .size(148.dp)
+                    .size(160.dp)
                     .background(
                         Brush.radialGradient(
                             listOf(color.copy(alpha = 0.30f), Color.Transparent)
@@ -74,7 +76,7 @@ fun TierRing(tier: Int, label: String, modifier: Modifier = Modifier) {
         }
         Box(
             Modifier
-                .size(124.dp)
+                .size(136.dp)
                 .background(
                     Brush.radialGradient(
                         listOf(
@@ -95,12 +97,18 @@ fun TierRing(tier: Int, label: String, modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = (-1).sp,
                 )
+                // The caption must stay inside the ring for every tier,
+                // including "CHAINS - ALL VEHICLES"; cap its width and let
+                // it wrap instead of running through the border.
                 Text(
                     tierCaption(tier),
                     color = color.copy(alpha = 0.85f),
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp,
+                    letterSpacing = 1.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 12.sp,
+                    modifier = Modifier.widthIn(max = 100.dp),
                 )
             }
         }
