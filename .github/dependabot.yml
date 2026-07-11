@@ -35,6 +35,12 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "org.jetbrains.kotlinx:kotlinx-coroutines*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "com.google.maps.android:maps-compose"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Gradle itself upgrades with AGP and Android Studio, not alone;
+      # AGP 8.7 is unsupported on Gradle 9 even though CI happens to pass.
+      - dependency-name: "gradle-wrapper"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
