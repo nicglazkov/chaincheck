@@ -181,6 +181,9 @@ private fun RouteSuggestionCard(repository: Repository, modifier: Modifier = Mod
     if (candidates.isEmpty()) return
     // Lower tier wins; fewer closures breaks ties. Presented as status, not advice.
     val best = candidates.minByOrNull { it.tier * 100 + it.closures } ?: return
+    // The destination picked on Home decides which route this reader cares
+    // about; the card answers for that route first, then names the clearest.
+    val chosen = candidates.firstOrNull { it.id == repository.selectedCorridor }
 
     CcCard(modifier) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
@@ -198,9 +201,17 @@ private fun RouteSuggestionCard(repository: Repository, modifier: Modifier = Mod
                     )
                 }
             }
+            val bestStatus = "${best.route} (${best.tierLabel}, " +
+                countLabel(best.closures, "closure") + ")"
             Text(
-                "Clearest right now: ${best.route} (${best.tierLabel}, " +
-                    "${best.closures} closures)",
+                when {
+                    chosen == null || chosen.id == best.id ->
+                        "Clearest right now: $bestStatus"
+                    else ->
+                        "Your route ${chosen.route}: ${chosen.tierLabel}, " +
+                            countLabel(chosen.closures, "closure") +
+                            ". Clearest: $bestStatus"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
