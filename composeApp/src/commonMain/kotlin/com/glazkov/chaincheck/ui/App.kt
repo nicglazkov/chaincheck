@@ -59,6 +59,18 @@ fun App(repository: Repository) {
             tab = Tab.Map
         }
 
+        // Back walks inward-out: guide/detail first, then any tab back to
+        // Home, and only from Home does it leave the app.
+        PlatformBackHandler(
+            enabled = showGuide || openCorridor != null || tab != Tab.Home
+        ) {
+            when {
+                showGuide -> showGuide = false
+                openCorridor != null -> openCorridor = null
+                else -> tab = Tab.Home
+            }
+        }
+
         if (!disclaimerSeen) {
             AlertDialog(
                 onDismissRequest = {},

@@ -13,6 +13,13 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    ignore:
+      # The Kotlin/AGP toolchain is pinned to what the installed Android
+      # Studio supports; it gets upgraded deliberately, not by bot.
+      - dependency-name: "org.jetbrains.kotlin:*"
+      - dependency-name: "org.jetbrains.kotlin.*"
+      - dependency-name: "com.android.application"
+      - dependency-name: "com.android.library"
 
   - package-ecosystem: "github-actions"
     directory: "/"

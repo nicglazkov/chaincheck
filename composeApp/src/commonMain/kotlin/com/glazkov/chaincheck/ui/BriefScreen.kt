@@ -1,5 +1,6 @@
 package com.glazkov.chaincheck.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,8 +66,15 @@ fun BriefScreen(repository: Repository, modifier: Modifier = Modifier) {
         if (corridor !in BRIEF_CORRIDORS) corridor = "i80"
     }
 
+    val scrollState = rememberScrollState()
+    // The generated brief lands below the fold; bring it into view so the
+    // user never wonders whether anything happened.
+    LaunchedEffect(answer) {
+        if (answer != null) scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier.fillMaxSize().verticalScroll(scrollState).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("Trip brief", style = MaterialTheme.typography.headlineSmall)
@@ -105,9 +113,13 @@ fun BriefScreen(repository: Repository, modifier: Modifier = Modifier) {
                 )
             }
         }
+        // Whole rows toggle, not just the checkbox squares: gloves, again.
         Column {
             TiresOption.entries.forEach { option ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().clickable { tires = option },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Checkbox(
                         checked = tires == option,
                         onCheckedChange = { tires = option },
@@ -116,11 +128,17 @@ fun BriefScreen(repository: Repository, modifier: Modifier = Modifier) {
                 }
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth().clickable { towing = !towing },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Checkbox(checked = towing, onCheckedChange = { towing = it })
             Text("Towing a trailer")
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth().clickable { heavy = !heavy },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Checkbox(checked = heavy, onCheckedChange = { heavy = it })
             Text("Over 6,000 lbs gross weight")
         }
@@ -152,7 +170,7 @@ fun BriefScreen(repository: Repository, modifier: Modifier = Modifier) {
         ) { Text(if (loading) "Working..." else "Get my brief") }
 
         if (loading) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-        error?.let { Text("Couldn't get a brief: $it", color = MaterialTheme.colorScheme.error) }
+        error?.let { Text(humanizeError(it), color = MaterialTheme.colorScheme.error) }
 
         answer?.let { brief ->
             CcCard(Modifier.fillMaxWidth()) {
@@ -173,7 +191,7 @@ fun BriefScreen(repository: Repository, modifier: Modifier = Modifier) {
                     Text(
                         buildString {
                             append("As of ")
-                            append(brief.asOf?.take(16)?.replace("T", " ") ?: "unknown")
+                            append(formatLocalTime(brief.asOf))
                             if (brief.stale) append(" (cached)")
                         },
                         style = MaterialTheme.typography.bodySmall,
