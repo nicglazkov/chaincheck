@@ -8,16 +8,19 @@ fired by Cloud Scheduler and guarded by a shared token.
 from __future__ import annotations
 
 import asyncio
+import hmac
+import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import httpx
-from fastapi import FastAPI, Header, HTTPException, Request
-from pydantic import BaseModel
+from fastapi import FastAPI, Header, HTTPException, Path, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from chaincheck import __version__, rules
-from chaincheck.api import serialize
+from chaincheck.api import security, serialize
 from chaincheck.brief import facts as brief_facts
 from chaincheck.brief.tripbrief import TripBriefer
 from chaincheck.feeds.nws import NwsSource
@@ -77,7 +80,71 @@ async def lifespan(_: FastAPI):
         state = None
 
 
-app = FastAPI(title="ChainCheck API", version=__version__, lifespan=lifespan)
+logger = logging.getLogger(__name__)
+
+# Interactive docs advertise every route (including /internal/poll) to anyone.
+# Off by default; opt in with CHAINCHECK_DOCS=1 for local exploration.
+_docs_on = os.environ.get("CHAINCHECK_DOCS") == "1"
+app = FastAPI(
+    title="ChainCheck API",
+    version=__version__,
+    lifespan=lifespan,
+    docs_url="/docs" if _docs_on else None,
+    redoc_url="/redoc" if _docs_on else None,
+    openapi_url="/openapi.json" if _docs_on else None,
+)
+
+# A generous global ceiling: real clients poll a handful of times a minute;
+# this only bites scrapers and crude floods. Per trusted IP, per instance.
+_request_limiter = security.RateLimiter(limit=120, window_seconds=60.0)
+# Anonymous Firestore writes get their own tighter budget so nobody can
+# spray junk subscriptions into the database.
+_subscription_limiter = security.RateLimiter(limit=20, window_seconds=3600.0)
+
+# Paths exempt from the global limit: health must never be throttled (uptime
+# checks) and the scheduler tick authenticates with its own token.
+_UNLIMITED_PATHS = frozenset({"/health", "/healthz", "/internal/poll"})
+
+
+def _caller(request: Request) -> str | None:
+    return security.trusted_client_ip(
+        request.headers.get("x-forwarded-for"),
+        request.client.host if request.client else None,
+    )
+
+
+@app.middleware("http")
+async def _guard(request: Request, call_next):
+    # Reject oversized bodies before FastAPI buffers or parses them.
+    length = request.headers.get("content-length")
+    if length is not None:
+        try:
+            if int(length) > security.MAX_REQUEST_BYTES:
+                return JSONResponse(status_code=413, content={"detail": "request too large"})
+        except ValueError:
+            return JSONResponse(status_code=400, content={"detail": "bad content-length"})
+
+    if request.url.path not in _UNLIMITED_PATHS and not _request_limiter.allow(
+        _caller(request)
+    ):
+        return JSONResponse(status_code=429, content={"detail": "slow down"})
+
+    response = await call_next(request)
+    # Defense-in-depth headers; the API returns JSON, never HTML, but these
+    # cost nothing and close off content-sniffing and framing.
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
+@app.exception_handler(Exception)
+async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+    # Log the detail server-side; never return it. FastAPI's default already
+    # hides tracebacks, but this guarantees a stable, quiet error shape.
+    logger.exception("unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "internal error"})
 
 
 def _state() -> AppState:
@@ -126,7 +193,7 @@ async def routes() -> dict:
 
 
 @app.get("/v1/routes/{corridor_id}")
-async def route_detail(corridor_id: str) -> dict:
+async def route_detail(corridor_id: str = Path(max_length=64)) -> dict:
     st = _state()
     snapshot = await st.roads.snapshot()
     roads = snapshot.corridors.get(corridor_id)
@@ -153,7 +220,7 @@ async def passes() -> dict:
 
 
 @app.get("/v1/passes/{pass_id}")
-async def pass_detail(pass_id: str) -> dict:
+async def pass_detail(pass_id: str = Path(max_length=64)) -> dict:
     st = _state()
     mtn_pass = PASSES_BY_ID.get(pass_id)
     if mtn_pass is None:
@@ -273,7 +340,7 @@ async def resorts() -> dict:
 
 
 @app.get("/v1/resorts/{resort_id}")
-async def resort_detail(resort_id: str) -> dict:
+async def resort_detail(resort_id: str = Path(max_length=64)) -> dict:
     report = await _state().resorts.report(resort_id)
     if report is None:
         raise HTTPException(404, f"unknown or disabled resort '{resort_id}'")
@@ -311,8 +378,8 @@ async def evaluate_rules(query: VehicleQuery) -> dict:
 
 
 class TripBriefQuery(BaseModel):
-    corridor_id: str
-    origin: str = "Sacramento"
+    corridor_id: str = Field(max_length=32)
+    origin: str = Field(default="Sacramento", max_length=200)
     departure_time: datetime | None = None
     drivetrain: rules.Drivetrain | None = None
     tires: rules.Tires | None = None
@@ -320,14 +387,10 @@ class TripBriefQuery(BaseModel):
     towing: bool = False
 
 
-def _client_ip(request: Request) -> str | None:
-    """Caller address for the brief spend guard. Cloud Run's front end puts
-    the real client first in X-Forwarded-For; locally there is no proxy and
-    the socket peer is the client itself."""
-    forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip() or None
-    return request.client.host if request.client else None
+# A departure only makes sense within the forecast horizon; anything outside
+# this window is clamped so it cannot drive a pathological accumulation loop
+# or a garbage cache key.
+_MAX_DEPARTURE_AHEAD = timedelta(days=7)
 
 
 @app.post("/v1/tripbrief")
@@ -335,9 +398,12 @@ async def trip_brief(query: TripBriefQuery, request: Request) -> dict:
     st = _state()
     if query.corridor_id not in {p.corridor_id for p in PASSES}:
         raise HTTPException(422, f"no pass forecast for corridor '{query.corridor_id}'")
-    departure = query.departure_time or datetime.now(UTC)
+    now = datetime.now(UTC)
+    departure = query.departure_time or now
     if departure.tzinfo is None:
         departure = departure.replace(tzinfo=UTC)
+    departure = min(max(departure, now), now + _MAX_DEPARTURE_AHEAD)
+    origin = security.sanitize_origin(query.origin)
 
     snapshot = await st.roads.snapshot()
     mtn_pass = next(p for p in PASSES if p.corridor_id == query.corridor_id)
@@ -354,14 +420,14 @@ async def trip_brief(query: TripBriefQuery, request: Request) -> dict:
         )
     facts = brief_facts.assemble(
         corridor_id=query.corridor_id,
-        origin=query.origin,
+        origin=origin,
         departure=departure,
         snapshot=snapshot,
         forecast=forecast,
         outlook=outlook,
         vehicle=vehicle,
     )
-    result = await st.briefer.narrate(facts, client=_client_ip(request))
+    result = await st.briefer.narrate(facts, client=_caller(request))
     return {
         "brief": result.text,
         "ai": result.ai,
@@ -376,14 +442,16 @@ async def trip_brief(query: TripBriefQuery, request: Request) -> dict:
 
 
 class SubscriptionBody(BaseModel):
-    token: str
-    corridor_ids: list[str]
+    token: str = Field(max_length=security.MAX_TOKEN_LEN)
+    corridor_ids: list[str] = Field(max_length=security.MAX_CORRIDOR_IDS)
 
 
 @app.put("/v1/subscriptions")
-async def upsert_subscription(body: SubscriptionBody) -> dict:
-    if not body.token or len(body.token) > 4096:
+async def upsert_subscription(body: SubscriptionBody, request: Request) -> dict:
+    if not security.is_valid_push_token(body.token):
         raise HTTPException(422, "invalid token")
+    if not _subscription_limiter.allow(_caller(request)):
+        raise HTTPException(429, "too many subscription changes")
     corridor_ids = validate_corridors(body.corridor_ids)
     if not corridor_ids:
         raise HTTPException(422, "no valid corridor ids")
@@ -392,7 +460,9 @@ async def upsert_subscription(body: SubscriptionBody) -> dict:
 
 
 @app.get("/v1/subscriptions/{token}")
-async def get_subscription(token: str) -> dict:
+async def get_subscription(token: str = Path(max_length=security.MAX_TOKEN_LEN)) -> dict:
+    if not security.is_valid_push_token(token):
+        raise HTTPException(404, "unknown token")
     sub = await _state().subscriptions.get(token)
     if sub is None:
         raise HTTPException(404, "unknown token")
@@ -400,17 +470,27 @@ async def get_subscription(token: str) -> dict:
 
 
 @app.delete("/v1/subscriptions/{token}")
-async def delete_subscription(token: str) -> dict:
+async def delete_subscription(token: str = Path(max_length=security.MAX_TOKEN_LEN)) -> dict:
+    if not security.is_valid_push_token(token):
+        raise HTTPException(404, "unknown token")
     removed = await _state().subscriptions.delete(token)
     if not removed:
         raise HTTPException(404, "unknown token")
     return {"deleted": True}
 
 
+def _poll_authorized(supplied: str | None) -> bool:
+    expected = os.environ.get("POLL_TOKEN")
+    if not expected:
+        return True  # unset only in local/dev
+    if not supplied:
+        return False
+    return hmac.compare_digest(supplied, expected)
+
+
 @app.post("/internal/poll")
 async def poll_tick(x_poll_token: str | None = Header(default=None)) -> dict:
-    expected = os.environ.get("POLL_TOKEN")
-    if expected and x_poll_token != expected:
+    if not _poll_authorized(x_poll_token):
         raise HTTPException(403, "bad poll token")
     st = _state()
     now = datetime.now(UTC)
@@ -449,8 +529,11 @@ async def poll_tick(x_poll_token: str | None = Header(default=None)) -> dict:
 
 
 @app.get("/v1/events")
-async def recent_events() -> dict:
-    """Recent tier/closure change events (debug/dev; push lands in M2)."""
+async def recent_events(x_poll_token: str | None = Header(default=None)) -> dict:
+    """Recent tier/closure change events. Operational/debug only, so it
+    rides behind the same token as the poll tick rather than being public."""
+    if not _poll_authorized(x_poll_token):
+        raise HTTPException(403, "bad poll token")
     return {"events": _state().recent_events}
 
 

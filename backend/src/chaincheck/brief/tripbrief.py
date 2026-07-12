@@ -62,11 +62,25 @@ class BriefResult:
     facts: TripFacts
 
 
+# The brief cache is keyed partly by caller-supplied origin/departure, so its
+# key space is attacker-influenced even after inputs are clamped. TTLCache has
+# no eviction, so we cap distinct keys and flush wholesale at the ceiling;
+# without this a flood of cheap over-budget requests (each still creating a
+# cache lock) grows the heap without bound. Flushing loses warm briefs, which
+# simply regenerate under the spend guard.
+MAX_CACHE_KEYS = 2048
+
+
 class TripBriefer:
     def __init__(self, guard: SpendGuard | None = None) -> None:
         self._cache = TTLCache()
         self._client = None
         self._guard = guard or SpendGuard()
+
+    def _bounded_cache(self) -> TTLCache:
+        if len(self._cache._entries) >= MAX_CACHE_KEYS:
+            self._cache = TTLCache()
+        return self._cache
 
     def _anthropic(self):
         if self._client is None:
@@ -163,7 +177,7 @@ class TripBriefer:
             )
             return ""
 
-        outcome = await self._cache.get(key, CACHE_TTL, CACHE_MAX_SERVE, fetch)
+        outcome = await self._bounded_cache().get(key, CACHE_TTL, CACHE_MAX_SERVE, fetch)
         if not outcome.served or not outcome.value:
             if outcome.error:
                 logger.warning(

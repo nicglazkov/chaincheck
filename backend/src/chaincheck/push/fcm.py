@@ -60,6 +60,10 @@ class FcmSender:
             options = {"projectId": project} if project else None
             firebase_admin.initialize_app(options=options)
 
+    # FCM rejects a multicast of more than 500 tokens outright, so a popular
+    # corridor's whole audience must go out in chunks or nobody gets the push.
+    FCM_MULTICAST_MAX = 500
+
     async def send(self, tokens: list[str], message: PushMessage) -> SendReport:
         if not tokens:
             return SendReport()
@@ -73,9 +77,9 @@ class FcmSender:
             exceptions.InvalidArgumentError,
         )
 
-        def _send() -> SendReport:
+        def _send_chunk(chunk: list[str]) -> SendReport:
             multicast = messaging.MulticastMessage(
-                tokens=tokens,
+                tokens=chunk,
                 notification=messaging.Notification(
                     title=message.title, body=message.body
                 ),
@@ -84,7 +88,7 @@ class FcmSender:
             )
             response = messaging.send_each_for_multicast(multicast)
             dead: list[str] = []
-            for token, result in zip(tokens, response.responses, strict=True):
+            for token, result in zip(chunk, response.responses, strict=True):
                 if result.exception is None:
                     continue
                 if isinstance(result.exception, dead_types):
@@ -97,6 +101,14 @@ class FcmSender:
                         "push failed for token %s...: %s", token[:12], result.exception
                     )
             return SendReport(sent=response.success_count, dead_tokens=dead)
+
+        def _send() -> SendReport:
+            total = SendReport()
+            for i in range(0, len(tokens), self.FCM_MULTICAST_MAX):
+                part = _send_chunk(tokens[i : i + self.FCM_MULTICAST_MAX])
+                total.sent += part.sent
+                total.dead_tokens.extend(part.dead_tokens)
+            return total
 
         return await asyncio.to_thread(_send)
 

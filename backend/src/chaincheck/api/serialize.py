@@ -91,12 +91,21 @@ def corridor_detail(roads: CorridorRoads) -> dict:
     return payload
 
 
+# Raw feed errors embed upstream URLs, library exception types, and (from a
+# hostile upstream) reflected text. Clients only need to know a source is
+# degraded, so we publish the source label and a generic status, never the
+# detail. The detail stays in server logs.
+def _public_note(note: str) -> str:
+    source = note.split(":", 1)[0].strip()
+    return f"{source}: temporarily unavailable" if source else "a feed is temporarily unavailable"
+
+
 def snapshot_health(snapshot: SierraSnapshot) -> dict:
     return {
         "ok": snapshot.ok,
         "stale": snapshot.stale,
         "as_of": _iso(snapshot.data_as_of),
-        "notes": snapshot.notes,
+        "notes": [_public_note(n) for n in snapshot.notes],
     }
 
 
@@ -141,8 +150,8 @@ def resort_dict(r: ResortReport) -> dict:
         "updated_at": _iso(r.updated_at),
         "ok": r.ok,
         "stale": r.stale,
-        "error": r.error,
-        "notes": r.notes,
+        "error": "unavailable" if r.error else None,
+        "notes": [_public_note(n) for n in r.notes],
     }
 
 
