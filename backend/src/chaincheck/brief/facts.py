@@ -48,6 +48,16 @@ class TripFacts:
 DRIVE_WINDOW_HOURS = 4  # Sacramento-to-Tahoe scale drive
 PACIFIC = ZoneInfo("America/Los_Angeles")  # drivers read Pacific, not UTC
 
+# Feed-derived text flows verbatim into the model prompt. The strong
+# fact-only design already blocks the model from acting on injected text, but
+# capping length keeps a compromised upstream from bloating the prompt or
+# smuggling a wall of instructions.
+_FEED_STR_CAP = 160
+
+
+def _cap(value: str) -> str:
+    return value[:_FEED_STR_CAP]
+
 # The brief names at most this many closures; the model only sees (and
 # validation only requires) these, plus an honest "...and N more" tail.
 CLOSURE_MENTION_CAP = 5
@@ -68,12 +78,16 @@ def assemble(
     roads = snapshot.corridors[corridor_id]
 
     controls = tuple(
-        f"{c.location_name} ({c.direction}): {c.status} - {c.status_description}".strip(" -")
+        _cap(
+            f"{c.location_name} ({c.direction}): {c.status} - {c.status_description}".strip(" -")
+        )
         for c in roads.controls
         if control_tier(c) > Tier.R0
     )
     closures = tuple(
-        f"{c.location_name} ({c.direction}): {c.type_of_closure} {c.type_of_work}".strip()
+        _cap(
+            f"{c.location_name} ({c.direction}): {c.type_of_closure} {c.type_of_work}".strip()
+        )
         for c in roads.closures
     )
 
@@ -81,7 +95,7 @@ def assemble(
     alerts: tuple[str, ...] = ()
     window_periods: tuple[str, ...] = ()
     if forecast is not None:
-        alerts = tuple(a.headline or a.event for a in forecast.alerts)
+        alerts = tuple(_cap(a.headline or a.event) for a in forecast.alerts)
         window_end = departure + timedelta(hours=DRIVE_WINDOW_HOURS)
         window_periods = tuple(
             f"{p.name}: {p.short}, {p.temperature_f} F, wind {p.wind}"

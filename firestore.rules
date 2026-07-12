@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// ChainCheck stores only anonymous FCM tokens + watched route ids, and only
+// the backend (Firebase Admin SDK, via the Cloud Run service account) ever
+// touches them. The Admin SDK bypasses these rules entirely, so a total
+// client lockdown costs the app nothing and makes the database unreachable
+// by anyone holding the public Firebase config shipped in the APK.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

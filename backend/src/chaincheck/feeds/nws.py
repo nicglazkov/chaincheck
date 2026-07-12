@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from urllib.parse import urlparse
 
 import httpx
 from ca_roads.cache import TTLCache
@@ -18,6 +19,7 @@ from chaincheck import USER_AGENT
 from chaincheck.passes import MountainPass
 
 API_BASE = "https://api.weather.gov"
+_API_HOST = urlparse(API_BASE).hostname or "api.weather.gov"
 FORECAST_TTL = 15 * 60
 FORECAST_MAX_SERVE = 3 * 60 * 60
 ALERTS_TTL = 5 * 60
@@ -150,6 +152,12 @@ class NwsSource:
             return url
         meta = await self._get_json(f"{API_BASE}/points/{mtn_pass.lat:.4f},{mtn_pass.lon:.4f}")
         url = meta["properties"]["forecast"]
+        # This URL comes from the upstream response and is then fetched, so it
+        # is an SSRF surface if the points endpoint is ever compromised or
+        # spoofed. Only follow it when it stays on the NWS API host.
+        host = urlparse(url).hostname or ""
+        if host != _API_HOST and not host.endswith("." + _API_HOST):
+            raise ValueError(f"refusing off-host forecast url: {host!r}")
         self._forecast_urls[mtn_pass.id] = url
         return url
 
