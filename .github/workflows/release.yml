@@ -1,0 +1,52 @@
+name: release
+
+# Push a tag like v0.1.0 and this builds the signed release APK and attaches
+# it to a GitHub Release. Signing material and the Firebase config live in
+# repository secrets; none of it is in the repo.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Materialize signing and Firebase config
+        run: |
+          echo "${{ secrets.CHAINCHECK_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_B64 }}" | base64 -d > composeApp/google-services.json
+
+      - name: Build signed release APK
+        env:
+          CHAINCHECK_KEYSTORE: ${{ runner.temp }}/release.keystore
+          CHAINCHECK_KEYSTORE_PASSWORD: ${{ secrets.CHAINCHECK_KEYSTORE_PASSWORD }}
+          CHAINCHECK_KEY_ALIAS: chaincheck
+          CHAINCHECK_KEY_PASSWORD: ${{ secrets.CHAINCHECK_KEYSTORE_PASSWORD }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew :composeApp:assembleRelease
+
+      - name: Name the artifact
+        run: cp composeApp/build/outputs/apk/release/composeApp-release.apk "chaincheck-${GITHUB_REF_NAME}.apk"
+
+      - name: Create GitHub Release with the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "chaincheck-${GITHUB_REF_NAME}.apk" \
+            --title "ChainCheck $GITHUB_REF_NAME" \
+            --generate-notes

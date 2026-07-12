@@ -150,6 +150,21 @@ The trip brief pipeline is fact-assembly first, narration second:
 
 </details>
 
+## Install it
+
+Grab `chaincheck-<version>.apk` from the
+[latest release](https://github.com/nicglazkov/chaincheck/releases/latest)
+on your Android phone, open the download, and confirm the install. Android
+will ask you to allow installs from your browser the first time; that is
+normal for apps distributed outside the Play Store. A Play Store release
+is planned for the fall.
+
+By installing you agree to the
+[terms of use](https://nicglazkov.github.io/chaincheck/terms). The
+[privacy policy](https://nicglazkov.github.io/chaincheck/privacy) is short
+and worth the minute: no accounts, no tracking, location never leaves
+your phone.
+
 ## Run it locally
 
 **Backend** (Python 3.12+, [uv](https://github.com/astral-sh/uv) recommended):
