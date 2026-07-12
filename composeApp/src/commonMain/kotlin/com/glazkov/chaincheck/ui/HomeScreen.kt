@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,27 +73,48 @@ fun HomeScreen(
             mutableStateOf(repository.guideCardDismissed)
         }
         if (!guideCardDismissed) {
+            // The card body opens the guide; the only prominent affordance
+            // must point that way. A leading help glyph and trailing chevron
+            // say "tap to open"; dismiss is a small, clearly secondary x so
+            // curious newcomers don't tap it expecting the explainer.
             CcCard(Modifier.fillMaxWidth().clickable { onOpenGuide() }) {
                 Row(
                     Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.HelpOutline,
+                        contentDescription = null,
+                        tint = palette.accent,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
                     Column(Modifier.weight(1f)) {
                         Text(
                             "New to chain controls?",
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Text(
-                            "60 seconds on what R0-R3 mean and what your car needs.",
+                            "Tap for 60 seconds on what R0-R3 mean and what " +
+                                "your car needs.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    TextButton(onClick = {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = palette.accent,
+                    )
+                    IconButton(onClick = {
                         repository.guideCardDismissed = true
                         guideCardDismissed = true
-                    }) { Text("Dismiss") }
+                    }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Dismiss",
+                            tint = palette.subtleText,
+                        )
+                    }
                 }
             }
         }
