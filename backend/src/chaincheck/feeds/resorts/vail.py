@@ -14,7 +14,12 @@ import re
 
 import httpx
 
-from chaincheck.feeds.resorts.base import ResortAdapter, ResortReport, headers
+from chaincheck.feeds.resorts.base import (
+    ResortAdapter,
+    ResortReport,
+    fetch_text_capped,
+    headers,
+)
 
 _STATUSES = ("closed", "open", "hold", "scheduled")
 _OPEN = {"open", "scheduled"}
@@ -80,7 +85,8 @@ class VailAdapter(ResortAdapter):
     async def fetch(self, client: httpx.AsyncClient) -> ResortReport:
         url = f"https://{self.host}{TERRAIN_PATH}"
         report = ResortReport(resort_id=self.id, name=self.name, source_url=url)
-        resp = await client.get(
+        html = await fetch_text_capped(
+            client,
             url,
             headers={
                 **headers(),
@@ -89,17 +95,17 @@ class VailAdapter(ResortAdapter):
             },
             timeout=30.0,
         )
-        resp.raise_for_status()
-        if "TerrainStatusFeed" not in resp.text:
+        if "TerrainStatusFeed" not in html:
             # Bot wall serves an interstitial with a 200; treat it as a failure
             # so the registry stale-serves instead of reporting zeros.
             raise ValueError("blocked or unexpected page (no terrain feed present)")
-        report.lifts_open, report.lifts_total = parse_terrain_feed(resp.text)
+        report.lifts_open, report.lifts_total = parse_terrain_feed(html)
         if report.lifts_total == 0:
             report.notes.append("no lifts listed (off-season)")
 
         try:
-            snow_resp = await client.get(
+            snow_html = await fetch_text_capped(
+                client,
                 f"https://{self.host}{SNOW_PATH}",
                 headers={
                     **headers(),
@@ -108,8 +114,7 @@ class VailAdapter(ResortAdapter):
                 },
                 timeout=30.0,
             )
-            snow_resp.raise_for_status()
-            snow = parse_snow_report(snow_resp.text)
+            snow = parse_snow_report(snow_html)
             report.snow_overnight_in = snow["snow_overnight_in"]
             report.snow_24h_in = snow["snow_24h_in"]
             report.snow_48h_in = snow["snow_48h_in"]

@@ -9,6 +9,7 @@ import httpx
 from ca_roads.cache import TTLCache
 
 from chaincheck import USER_AGENT
+from chaincheck.feeds._http import fetch_json_capped
 from chaincheck.passes import MountainPass
 
 API_URL = "https://api.open-meteo.com/v1/forecast"
@@ -96,7 +97,8 @@ class OpenMeteoSource:
         result = SnowOutlook(pass_id=mtn_pass.id)
 
         async def fetch() -> list[SnowHour]:
-            resp = await self._client.get(
+            payload = await fetch_json_capped(
+                self._client,
                 API_URL,
                 params={
                     "latitude": f"{mtn_pass.lat:.4f}",
@@ -108,8 +110,7 @@ class OpenMeteoSource:
                 headers={"User-Agent": USER_AGENT},
                 timeout=20.0,
             )
-            resp.raise_for_status()
-            return parse_hours(resp.json())
+            return parse_hours(payload)
 
         outcome = await self._cache.get(("snow", mtn_pass.id, days), TTL, MAX_SERVE, fetch)
         if outcome.served:

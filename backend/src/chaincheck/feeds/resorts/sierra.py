@@ -14,6 +14,7 @@ import httpx
 from chaincheck.feeds.resorts.base import (
     ResortAdapter,
     ResortReport,
+    fetch_text_capped,
     headers,
     strip_tags,
 )
@@ -63,13 +64,11 @@ class SierraAtTahoeAdapter(ResortAdapter):
 
     async def fetch(self, client: httpx.AsyncClient) -> ResortReport:
         report = ResortReport(resort_id=self.id, name=self.name, source_url=SNOW_URL)
-        snow_resp = await client.get(SNOW_URL, headers=headers(), timeout=30.0)
-        snow_resp.raise_for_status()
-        parse_snow_page(snow_resp.text, report)
+        snow_html = await fetch_text_capped(client, SNOW_URL, headers=headers(), timeout=30.0)
+        parse_snow_page(snow_html, report)
         try:
-            lifts_resp = await client.get(LIFTS_URL, headers=headers(), timeout=30.0)
-            lifts_resp.raise_for_status()
-            parse_lifts_page(lifts_resp.text, report)
+            lifts_html = await fetch_text_capped(client, LIFTS_URL, headers=headers(), timeout=30.0)
+            parse_lifts_page(lifts_html, report)
         except httpx.HTTPError as exc:
             report.notes.append(f"lifts page unavailable: {type(exc).__name__}")
         return report
