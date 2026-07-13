@@ -113,8 +113,10 @@ async def _curl_text(url: str) -> str:
     """Fetch with the system curl binary."""
     max_mb = MAX_FEED_BYTES // (1024 * 1024)
     proc = await asyncio.create_subprocess_exec(
-        # --max-filesize aborts an over-large declared body; -m bounds time.
-        "curl", "-sfL", "-m", "30", "--max-filesize", str(MAX_FEED_BYTES),
+        # --max-filesize aborts an over-large declared body; -m bounds time;
+        # --max-redirs bounds a redirect chain from a misbehaving upstream.
+        "curl", "-sfL", "--max-redirs", "3", "-m", "30",
+        "--max-filesize", str(MAX_FEED_BYTES),
         "-H", f"User-Agent: {SCRAPER_USER_AGENT}", url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.DEVNULL,

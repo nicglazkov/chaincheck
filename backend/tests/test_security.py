@@ -1,6 +1,9 @@
 """The in-process request-safety layer: trusted client IP, rate limiting,
 and input validation that keep a public endpoint from becoming a vector."""
 
+import httpx
+import pytest
+
 from chaincheck.api import security
 
 
@@ -71,6 +74,28 @@ class TestPushTokenValidation:
         assert not security.is_valid_push_token("x" * 5000)
         assert not security.is_valid_push_token("has space")
         assert not security.is_valid_push_token("newline\ntoken")
+
+
+class TestForbidInternalHosts:
+    async def test_blocks_metadata_and_private_and_loopback(self):
+        # Literal IPs resolve locally (no network); non-global => blocked.
+        assert await security._resolves_to_non_public("169.254.169.254")  # metadata
+        assert await security._resolves_to_non_public("10.0.0.1")  # private
+        assert await security._resolves_to_non_public("127.0.0.1")  # loopback
+        assert await security._resolves_to_non_public("::1")  # ipv6 loopback
+
+    async def test_allows_public_addresses(self):
+        assert not await security._resolves_to_non_public("8.8.8.8")
+        assert not await security._resolves_to_non_public("1.1.1.1")
+
+    async def test_hook_raises_on_internal_redirect_target(self):
+        req = httpx.Request("GET", "http://169.254.169.254/latest/meta-data/")
+        with pytest.raises(security.BlockedHostError):
+            await security.forbid_internal_hosts(req)
+
+    async def test_hook_passes_public_host(self):
+        req = httpx.Request("GET", "https://8.8.8.8/")
+        await security.forbid_internal_hosts(req)  # no raise
 
 
 class TestSanitizeOrigin:

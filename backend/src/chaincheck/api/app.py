@@ -48,7 +48,15 @@ DISCLAIMER = (
 
 class AppState:
     def __init__(self) -> None:
-        self.client = httpx.AsyncClient(follow_redirects=True)
+        # Redirects are followed (some feeds need http->https / trailing-slash
+        # hops) but capped and screened: the hook aborts any request or
+        # redirect that resolves to a non-public address, closing SSRF via a
+        # compromised upstream. Shared by every feed, including ca_roads.
+        self.client = httpx.AsyncClient(
+            follow_redirects=True,
+            max_redirects=3,
+            event_hooks={"request": [security.forbid_internal_hosts]},
+        )
         self.roads = SierraRoads(self.client)
         self.nws = NwsSource(self.client)
         self.snow = OpenMeteoSource(self.client)
@@ -482,9 +490,11 @@ class TokenBody(BaseModel):
 # The token is a device secret, so it travels in the request body, never the
 # URL path where it would land in access logs and proxy history.
 @app.post("/v1/subscriptions/query")
-async def query_subscription(body: TokenBody) -> dict:
+async def query_subscription(body: TokenBody, request: Request) -> dict:
     if not security.is_valid_push_token(body.token):
         raise HTTPException(404, "unknown token")
+    if not _subscription_limiter.allow(_caller(request)):
+        raise HTTPException(429, "too many subscription requests")
     sub = await _state().subscriptions.get(body.token)
     if sub is None:
         raise HTTPException(404, "unknown token")
@@ -492,9 +502,11 @@ async def query_subscription(body: TokenBody) -> dict:
 
 
 @app.post("/v1/subscriptions/delete")
-async def delete_subscription(body: TokenBody) -> dict:
+async def delete_subscription(body: TokenBody, request: Request) -> dict:
     if not security.is_valid_push_token(body.token):
         raise HTTPException(404, "unknown token")
+    if not _subscription_limiter.allow(_caller(request)):
+        raise HTTPException(429, "too many subscription requests")
     removed = await _state().subscriptions.delete(body.token)
     if not removed:
         raise HTTPException(404, "unknown token")
