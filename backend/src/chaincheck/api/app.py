@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from chaincheck import __version__, rules
-from chaincheck.api import security, serialize
+from chaincheck.api import appcheck, security, serialize
 from chaincheck.brief import facts as brief_facts
 from chaincheck.brief.tripbrief import TripBriefer
 from chaincheck.feeds.nws import NwsSource
@@ -100,6 +100,8 @@ _request_limiter = security.RateLimiter(limit=120, window_seconds=60.0)
 # Anonymous Firestore writes get their own tighter budget so nobody can
 # spray junk subscriptions into the database.
 _subscription_limiter = security.RateLimiter(limit=20, window_seconds=3600.0)
+# App Check attestation, monitoring-first (see appcheck.py).
+_appcheck_monitor = appcheck.AppCheckMonitor()
 
 # Paths exempt from the global limit: health must never be throttled (uptime
 # checks) and the scheduler tick authenticates with its own token.
@@ -128,6 +130,20 @@ async def _guard(request: Request, call_next):
         _caller(request)
     ):
         return JSONResponse(status_code=429, content={"detail": "slow down"})
+
+    # App Check: record attestation for every app-facing request. Rejects only
+    # protected paths, and only once enforcement is switched on.
+    if request.url.path not in _UNLIMITED_PATHS:
+        attest = await appcheck.verify(request.headers.get(appcheck.HEADER))
+        _appcheck_monitor.record(attest)
+        if (
+            appcheck.enforcing()
+            and attest != "valid"
+            and request.url.path in appcheck.PROTECTED_PATHS
+        ):
+            return JSONResponse(
+                status_code=401, content={"detail": "app attestation required"}
+            )
 
     response = await call_next(request)
     # Defense-in-depth headers; the API returns JSON, never HTML, but these
@@ -543,6 +559,15 @@ async def recent_events(x_poll_token: str | None = Header(default=None)) -> dict
     if not _poll_authorized(x_poll_token):
         raise HTTPException(403, "bad poll token")
     return {"events": _state().recent_events}
+
+
+@app.get("/internal/appcheck-stats")
+async def appcheck_stats(x_poll_token: str | None = Header(default=None)) -> dict:
+    """How much traffic is App Check attested, so enforcement can be turned on
+    with confidence once the app ships to the Play Store."""
+    if not _poll_authorized(x_poll_token):
+        raise HTTPException(403, "bad poll token")
+    return _appcheck_monitor.snapshot()
 
 
 def main() -> None:

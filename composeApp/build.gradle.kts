@@ -78,6 +78,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.firebase.messaging)
             implementation(libs.firebase.crashlytics)
+            implementation(libs.firebase.appcheck.playintegrity)
             implementation(libs.maps.compose)
             implementation(libs.play.services.maps)
             implementation(libs.play.services.location)
