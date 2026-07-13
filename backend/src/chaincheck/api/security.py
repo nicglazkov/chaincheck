@@ -9,14 +9,21 @@ a single caller from turning a public endpoint into a cost or abuse vector.
 
 from __future__ import annotations
 
+import asyncio
 import ipaddress
 import re
+import socket
 import time
 from collections import deque
 from collections.abc import Callable
 
+import httpx
+
 MAX_REQUEST_BYTES = 16 * 1024  # our largest legitimate body is a few hundred
-MAX_TOKEN_LEN = 4096
+# Firestore document ids cap at 1500 bytes and real FCM tokens are ~150-350
+# chars; keep well under the former so an oversized token is a clean 422 at
+# the edge rather than a 500 from deep in the store.
+MAX_TOKEN_LEN = 1024
 MAX_ORIGIN_LEN = 64
 MAX_CORRIDOR_IDS = 64
 
@@ -127,3 +134,36 @@ _ORIGIN_STRIP = re.compile(r"[^A-Za-z0-9 ,.'\-/]")
 def sanitize_origin(origin: str, max_len: int = MAX_ORIGIN_LEN) -> str:
     cleaned = _ORIGIN_STRIP.sub("", origin or "").strip()
     return cleaned[:max_len] or "Sacramento"
+
+
+class BlockedHostError(httpx.RequestError):
+    """An outbound request (or a redirect) targeted a non-public address."""
+
+
+async def _resolves_to_non_public(host: str) -> bool:
+    """True if ``host`` resolves to any non-global address (private, loopback,
+    link-local incl. the cloud metadata IP, reserved, etc.)."""
+    try:
+        infos = await asyncio.get_running_loop().getaddrinfo(host, None)
+    except (socket.gaierror, UnicodeError):
+        return False  # let the normal connect path surface a DNS failure
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            continue
+        if not ip.is_global:
+            return True
+    return False
+
+
+async def forbid_internal_hosts(request: httpx.Request) -> None:
+    """httpx request hook: abort any request whose target resolves to a
+    non-public address. Runs on the initial request AND every redirect, so a
+    compromised upstream cannot 3xx the shared client into the VPC or the
+    cloud metadata server. Legitimate public redirects are unaffected.
+    """
+    if await _resolves_to_non_public(request.url.host):
+        raise BlockedHostError(
+            f"blocked non-public host: {request.url.host}", request=request
+        )
