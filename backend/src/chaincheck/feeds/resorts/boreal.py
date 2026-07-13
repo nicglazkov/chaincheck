@@ -11,7 +11,12 @@ from datetime import UTC, datetime
 
 import httpx
 
-from chaincheck.feeds.resorts.base import ResortAdapter, ResortReport, headers
+from chaincheck.feeds.resorts.base import (
+    ResortAdapter,
+    ResortReport,
+    fetch_json_capped,
+    headers,
+)
 
 LIFTS_URL = "https://api.rideboreal.com/api/v1/dor/drupal/lifts"
 
@@ -34,9 +39,7 @@ class BorealAdapter(ResortAdapter):
 
     async def fetch(self, client: httpx.AsyncClient) -> ResortReport:
         report = ResortReport(resort_id=self.id, name=self.name, source_url=LIFTS_URL)
-        resp = await client.get(LIFTS_URL, headers=headers(), timeout=25.0)
-        resp.raise_for_status()
-        payload = resp.json()
+        payload = await fetch_json_capped(client, LIFTS_URL, headers=headers(), timeout=25.0)
         if not isinstance(payload, list):
             raise ValueError("unexpected lifts payload shape")
         report.lifts_open, report.lifts_total, report.updated_at = parse_lifts(payload)

@@ -165,6 +165,9 @@ data class SubscriptionBody(
 )
 
 @Serializable
+data class TokenBody(val token: String)
+
+@Serializable
 data class RulesQuery(
     val tier: Int,
     val drivetrain: String,

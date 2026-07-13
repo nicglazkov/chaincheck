@@ -8,7 +8,13 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from chaincheck.feeds.resorts.base import ResortAdapter, ResortReport, headers, parse_inches
+from chaincheck.feeds.resorts.base import (
+    ResortAdapter,
+    ResortReport,
+    fetch_json_capped,
+    headers,
+    parse_inches,
+)
 
 FEED_URL = "https://sugarbowl.com/services_json/update.json"
 _PACIFIC = ZoneInfo("America/Los_Angeles")
@@ -47,6 +53,5 @@ class SugarBowlAdapter(ResortAdapter):
     name = "Sugar Bowl"
 
     async def fetch(self, client: httpx.AsyncClient) -> ResortReport:
-        resp = await client.get(FEED_URL, headers=headers(), timeout=25.0)
-        resp.raise_for_status()
-        return parse_feed(resp.json())
+        payload = await fetch_json_capped(client, FEED_URL, headers=headers(), timeout=25.0)
+        return parse_feed(payload)

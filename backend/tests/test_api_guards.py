@@ -37,6 +37,14 @@ def test_poll_requires_token_and_is_constant_time_checked(client):
     ).status_code == 403
 
 
+def test_poll_fails_closed_when_token_unset(client, monkeypatch):
+    # A misconfigured deploy that forgot POLL_TOKEN must NOT expose the tick.
+    monkeypatch.delenv("POLL_TOKEN", raising=False)
+    monkeypatch.delenv("CHAINCHECK_ALLOW_OPEN_POLL", raising=False)
+    assert client.post("/internal/poll").status_code == 403
+    assert client.get("/v1/events").status_code == 403
+
+
 def test_events_is_no_longer_public(client):
     assert client.get("/v1/events").status_code == 403
     ok = client.get("/v1/events", headers={"X-Poll-Token": "secret-token"})
@@ -66,8 +74,19 @@ def test_subscription_roundtrip_with_valid_token(client):
     r = client.put("/v1/subscriptions", json={"token": tok, "corridor_ids": ["i80", "nope"]})
     assert r.status_code == 200
     assert r.json()["corridor_ids"] == ["i80"]  # unknown dropped
-    got = client.get(f"/v1/subscriptions/{tok}")
+    # Query and delete carry the token in the body, never the URL path.
+    got = client.post("/v1/subscriptions/query", json={"token": tok})
     assert got.status_code == 200 and got.json()["corridor_ids"] == ["i80"]
+    gone = client.post("/v1/subscriptions/delete", json={"token": tok})
+    assert gone.status_code == 200
+    assert client.post("/v1/subscriptions/query", json={"token": tok}).status_code == 404
+
+
+def test_token_never_appears_in_a_url_path(client):
+    # There is no path-parameter route that would log the token.
+    tok = "fMxx1a2b:APA91bH-_ok"
+    assert client.get(f"/v1/subscriptions/{tok}").status_code in (404, 405)
+    assert client.delete(f"/v1/subscriptions/{tok}").status_code in (404, 405)
 
 
 def test_subscription_write_rate_limit(client):

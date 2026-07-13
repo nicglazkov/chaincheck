@@ -4,7 +4,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -63,7 +62,12 @@ class ChainCheckApi(private val client: HttpClient = defaultClient()) {
     }
 
     suspend fun deleteSubscription(token: String) {
-        client.delete("${ApiConfig.baseUrl}/v1/subscriptions/$token")
+        // Token in the body, not the path: it is a device secret and must not
+        // land in server access logs.
+        client.post("${ApiConfig.baseUrl}/v1/subscriptions/delete") {
+            contentType(ContentType.Application.Json)
+            setBody(TokenBody(token))
+        }
     }
 
     companion object {

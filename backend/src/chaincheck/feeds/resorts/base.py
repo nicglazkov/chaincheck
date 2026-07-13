@@ -18,6 +18,14 @@ from datetime import datetime
 
 import httpx
 
+from chaincheck.feeds._http import (
+    MAX_FEED_BYTES,
+    fetch_json_capped,
+    fetch_text_capped,
+)
+
+__all__ = ["fetch_json_capped", "fetch_text_capped"]  # re-exported for adapters
+
 
 @dataclass
 class ResortReport:
@@ -103,14 +111,17 @@ def strip_tags(html: str) -> str:
 
 async def _curl_text(url: str) -> str:
     """Fetch with the system curl binary."""
+    max_mb = MAX_FEED_BYTES // (1024 * 1024)
     proc = await asyncio.create_subprocess_exec(
-        "curl", "-sfL", "-m", "30", "-H", f"User-Agent: {SCRAPER_USER_AGENT}", url,
+        # --max-filesize aborts an over-large declared body; -m bounds time.
+        "curl", "-sfL", "-m", "30", "--max-filesize", str(MAX_FEED_BYTES),
+        "-H", f"User-Agent: {SCRAPER_USER_AGENT}", url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.DEVNULL,
     )
     stdout, _ = await proc.communicate()
     if proc.returncode != 0:
-        raise RuntimeError(f"curl exited {proc.returncode} for {url}")
+        raise RuntimeError(f"curl exited {proc.returncode} for {url} (>{max_mb}MB?)")
     return stdout.decode("utf-8", errors="replace")
 
 
@@ -119,12 +130,11 @@ async def get_page_text(client: httpx.AsyncClient, url: str) -> str:
 
     Cloudflare challenges httpx's client-hello on some resort sites while
     accepting stock curl. Same honest User-Agent either way; curl is simply
-    a different mainstream HTTP client, not a disguise.
+    a different mainstream HTTP client, not a disguise. Both paths cap the
+    response size so a hostile page cannot exhaust memory.
     """
     try:
-        resp = await client.get(url, headers=headers(), timeout=30.0)
-        resp.raise_for_status()
-        return resp.text
+        return await fetch_text_capped(client, url, headers=headers(), timeout=30.0)
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 403 and shutil.which("curl"):
             return await _curl_text(url)

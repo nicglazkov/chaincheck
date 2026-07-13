@@ -16,6 +16,7 @@ import httpx
 from ca_roads.cache import TTLCache
 
 from chaincheck import USER_AGENT
+from chaincheck.feeds._http import fetch_json_capped
 from chaincheck.passes import MountainPass
 
 API_BASE = "https://api.weather.gov"
@@ -137,14 +138,13 @@ class NwsSource:
         self._forecast_urls: dict[str, str] = {}
 
     async def _get_json(self, url: str, params: dict | None = None) -> dict:
-        resp = await self._client.get(
+        return await fetch_json_capped(
+            self._client,
             url,
             params=params,
             headers={"User-Agent": USER_AGENT, "Accept": "application/geo+json"},
             timeout=20.0,
         )
-        resp.raise_for_status()
-        return resp.json()
 
     async def _forecast_url(self, mtn_pass: MountainPass) -> str:
         url = self._forecast_urls.get(mtn_pass.id)

@@ -14,7 +14,13 @@ from datetime import UTC, datetime
 
 import httpx
 
-from chaincheck.feeds.resorts.base import ResortAdapter, ResortReport, headers, strip_tags
+from chaincheck.feeds.resorts.base import (
+    ResortAdapter,
+    ResortReport,
+    fetch_json_capped,
+    headers,
+    strip_tags,
+)
 
 PAGE_URL = "https://www.donnerskiranch.com/liftstatus"
 TOTAL_CHAIRS = 6
@@ -62,8 +68,7 @@ class DonnerSkiRanchAdapter(ResortAdapter):
     name = "Donner Ski Ranch"
 
     async def fetch(self, client: httpx.AsyncClient) -> ResortReport:
-        resp = await client.get(
-            PAGE_URL, params={"format": "json"}, headers=headers(), timeout=30.0
+        payload = await fetch_json_capped(
+            client, PAGE_URL, params={"format": "json"}, headers=headers(), timeout=30.0
         )
-        resp.raise_for_status()
-        return parse_page_json(resp.json())
+        return parse_page_json(payload)

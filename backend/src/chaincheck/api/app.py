@@ -459,21 +459,27 @@ async def upsert_subscription(body: SubscriptionBody, request: Request) -> dict:
     return {"token": sub.token, "corridor_ids": sub.corridor_ids}
 
 
-@app.get("/v1/subscriptions/{token}")
-async def get_subscription(token: str = Path(max_length=security.MAX_TOKEN_LEN)) -> dict:
-    if not security.is_valid_push_token(token):
+class TokenBody(BaseModel):
+    token: str = Field(max_length=security.MAX_TOKEN_LEN)
+
+
+# The token is a device secret, so it travels in the request body, never the
+# URL path where it would land in access logs and proxy history.
+@app.post("/v1/subscriptions/query")
+async def query_subscription(body: TokenBody) -> dict:
+    if not security.is_valid_push_token(body.token):
         raise HTTPException(404, "unknown token")
-    sub = await _state().subscriptions.get(token)
+    sub = await _state().subscriptions.get(body.token)
     if sub is None:
         raise HTTPException(404, "unknown token")
     return {"token": sub.token, "corridor_ids": sub.corridor_ids}
 
 
-@app.delete("/v1/subscriptions/{token}")
-async def delete_subscription(token: str = Path(max_length=security.MAX_TOKEN_LEN)) -> dict:
-    if not security.is_valid_push_token(token):
+@app.post("/v1/subscriptions/delete")
+async def delete_subscription(body: TokenBody) -> dict:
+    if not security.is_valid_push_token(body.token):
         raise HTTPException(404, "unknown token")
-    removed = await _state().subscriptions.delete(token)
+    removed = await _state().subscriptions.delete(body.token)
     if not removed:
         raise HTTPException(404, "unknown token")
     return {"deleted": True}
@@ -482,7 +488,9 @@ async def delete_subscription(token: str = Path(max_length=security.MAX_TOKEN_LE
 def _poll_authorized(supplied: str | None) -> bool:
     expected = os.environ.get("POLL_TOKEN")
     if not expected:
-        return True  # unset only in local/dev
+        # Fail closed: a production deploy always sets POLL_TOKEN. Only an
+        # explicit local-dev opt-in leaves this internal endpoint open.
+        return os.environ.get("CHAINCHECK_ALLOW_OPEN_POLL") == "1"
     if not supplied:
         return False
     return hmac.compare_digest(supplied, expected)

@@ -11,7 +11,13 @@ from datetime import datetime
 
 import httpx
 
-from chaincheck.feeds.resorts.base import ResortAdapter, ResortReport, headers, parse_inches
+from chaincheck.feeds.resorts.base import (
+    ResortAdapter,
+    ResortReport,
+    fetch_json_capped,
+    headers,
+    parse_inches,
+)
 
 FEED_URL = "https://mtnpowder.com/feed"
 
@@ -54,11 +60,11 @@ class PalisadesAdapter(ResortAdapter):
     mtnpowder_resort_id = "61"
 
     async def fetch(self, client: httpx.AsyncClient) -> ResortReport:
-        resp = await client.get(
+        payload = await fetch_json_capped(
+            client,
             FEED_URL,
             params={"resortId": self.mtnpowder_resort_id},
             headers=headers(),
             timeout=25.0,
         )
-        resp.raise_for_status()
-        return parse_feed(resp.json(), self.id, self.name)
+        return parse_feed(payload, self.id, self.name)
