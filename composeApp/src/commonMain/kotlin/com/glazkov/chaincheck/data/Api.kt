@@ -3,6 +3,7 @@ package com.glazkov.chaincheck.data
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
+import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -76,8 +77,17 @@ class ChainCheckApi(private val client: HttpClient = defaultClient()) {
             explicitNulls = false
         }
 
+        // Attaches the Firebase App Check token to every backend call when one
+        // is available. The provider is suspendable, so it runs in onRequest.
+        private val appCheckPlugin = createClientPlugin("AppCheck") {
+            onRequest { request, _ ->
+                appCheckToken()?.let { request.headers.append("X-Firebase-AppCheck", it) }
+            }
+        }
+
         fun defaultClient(): HttpClient = httpClient {
             install(ContentNegotiation) { json(json) }
+            install(appCheckPlugin)
         }
     }
 }

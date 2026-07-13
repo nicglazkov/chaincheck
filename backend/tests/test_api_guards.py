@@ -110,3 +110,30 @@ def test_global_rate_limit_returns_429(client):
     assert 429 in codes
     # health stays exempt even after the flood
     assert client.get("/health").status_code == 200
+
+
+def test_appcheck_monitors_but_does_not_block_by_default(client):
+    app_module._appcheck_monitor = app_module.appcheck.AppCheckMonitor()
+    # No attestation header + not enforcing -> a protected write still succeeds.
+    tok = "fMxx1a2b:APA91bH-_ok.mon"
+    r = client.put("/v1/subscriptions", json={"token": tok, "corridor_ids": ["i80"]})
+    assert r.status_code == 200
+    stats = client.get("/internal/appcheck-stats", headers={"X-Poll-Token": "secret-token"})
+    assert stats.status_code == 200
+    body = stats.json()
+    assert body["missing"] >= 1 and body["enforcing"] is False
+
+
+def test_appcheck_stats_needs_poll_token(client):
+    assert client.get("/internal/appcheck-stats").status_code == 403
+
+
+def test_appcheck_enforcement_blocks_protected_paths_without_token(client, monkeypatch):
+    monkeypatch.setenv("APP_CHECK_ENFORCE", "1")
+    # Protected write with no attestation -> rejected before any DB work.
+    r = client.put(
+        "/v1/subscriptions", json={"token": "fMxx_valid_ok", "corridor_ids": ["i80"]}
+    )
+    assert r.status_code == 401
+    # Reads stay open even under enforcement (web page / evals).
+    assert client.get("/health").status_code == 200
