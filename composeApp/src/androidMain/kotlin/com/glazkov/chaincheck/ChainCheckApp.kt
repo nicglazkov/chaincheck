@@ -26,6 +26,7 @@ class ChainCheckApp : Application() {
             api = ChainCheckApi(),
             settings = settings,
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+            currentVersion = BuildConfig.VERSION_NAME,
         )
         repository.start()
     }

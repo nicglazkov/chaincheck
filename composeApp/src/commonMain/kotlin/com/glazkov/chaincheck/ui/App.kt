@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +82,32 @@ fun App(repository: Repository) {
                         repository.disclaimerAccepted = true
                         disclaimerSeen = true
                     }) { Text("I understand") }
+                },
+            )
+        }
+
+        // Update prompt: shown once per newer release (see Repository). Only
+        // after the disclaimer, so a brand-new install is not double-dialoged.
+        val update by repository.update.collectAsState()
+        val pendingUpdate = update
+        if (disclaimerSeen && pendingUpdate != null) {
+            AlertDialog(
+                onDismissRequest = { repository.dismissUpdate() },
+                title = { Text("Update available") },
+                text = {
+                    Text(
+                        "ChainCheck ${pendingUpdate.version} is available. Download " +
+                            "the new version to get the latest fixes."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        com.glazkov.chaincheck.data.openUrl(pendingUpdate.url)
+                        repository.dismissUpdate()
+                    }) { Text("Update") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { repository.dismissUpdate() }) { Text("Later") }
                 },
             )
         }
