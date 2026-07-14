@@ -97,8 +97,8 @@ android {
         applicationId = "com.glazkov.chaincheck"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
         // Android-restricted (package+cert) key from local.properties on dev
         // machines or the environment in the release workflow; PR CI builds
         // with an empty value and the map simply doesn't render there.
