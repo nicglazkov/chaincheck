@@ -12,7 +12,7 @@ ChainCheck is free. No account, no sign-up, no tracking.
 1. On your **Android phone**, open the
    [latest release](https://github.com/nicglazkov/chaincheck/releases/latest).
 2. Under **Assets**, tap the file that ends in **`.apk`** to download it.
-3. Open the downloaded file — tap it in the download notification, or find it
+3. Open the downloaded file. Tap it in the download notification, or find it
    in your **Files / Downloads**.
 4. The first time, Android warns that the app is from an **"unknown source"**
    and offers a settings toggle. Tap **Settings**, turn on **"Allow from this
@@ -32,7 +32,7 @@ The iPhone version arrives with the **App Store release in August 2026**.
 
 When a new version is released, download the newer `.apk` from the
 [releases page](https://github.com/nicglazkov/chaincheck/releases/latest) and
-open it — it installs right over the old one, keeping your settings. Once the
+open it. It installs right over the old one, keeping your settings. Once the
 app is on the stores, updates will be automatic.
 
 ## Is it safe to install?
@@ -48,7 +48,7 @@ app is on the stores, updates will be automatic.
 ## Trouble installing?
 
 - **"App not installed"** usually means an older copy with a different signature
-  is present — uninstall the old ChainCheck first, then install again.
+  is present. Uninstall the old ChainCheck first, then install again.
 - **Can't find the setting?** On most phones it is **Settings → Apps → Special
   access → Install unknown apps**, then pick your browser or Files app.
 - Still stuck? Open an issue at
