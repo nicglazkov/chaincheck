@@ -53,6 +53,5 @@ ChainCheck is a driving utility and is not directed at children.
 
 ## Changes and contact
 
-Changes to this policy will be posted at this page. Questions:
-nic@glazkov.com or open an issue at
-https://github.com/nicglazkov/chaincheck/issues.
+Changes to this policy will be posted at this page. Questions: open an issue
+at https://github.com/nicglazkov/chaincheck/issues.

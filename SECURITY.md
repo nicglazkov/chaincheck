@@ -7,8 +7,8 @@ a vulnerability, I want to hear about it.
 ## Reporting
 
 Please report privately through GitHub: use the **Report a vulnerability**
-button under the repository's Security tab. If that does not work for you,
-email nic@glazkov.com.
+button under the repository's Security tab, which opens a private advisory
+only the maintainer can see.
 
 Please do not open a public issue for a security problem.
 
