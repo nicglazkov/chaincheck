@@ -3,14 +3,14 @@
 
   <h1>ChainCheck</h1>
 
-  <p><b>Tahoe winter driving in one app: live chain controls, closures, storm timing, and resort snow.</b></p>
+  <p><b>Live chain controls, closures, pass weather, and resort snow for the Tahoe passes.</b></p>
 
   <p>
     <a href="https://github.com/nicglazkov/chaincheck/actions/workflows/ci.yml"><img src="https://github.com/nicglazkov/chaincheck/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
     <a href="backend/pyproject.toml"><img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+"></a>
     <a href="composeApp/build.gradle.kts"><img src="https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin Multiplatform"></a>
-    <a href="#tests-and-evals"><img src="https://img.shields.io/badge/Backend_tests-150_passing-2E7D32" alt="150 backend tests"></a>
+    <a href="#tests-and-evals"><img src="https://img.shields.io/badge/Backend_tests-passing-2E7D32" alt="Backend tests passing"></a>
   </p>
 
   <p>
@@ -27,19 +27,15 @@
 
 ---
 
-Every Sierra storm, the same question hits every ski group chat: **do we need chains?**
-Answering it today means juggling QuickMap, a weather app, resort sites, and CHP logs.
-ChainCheck puts the whole picture on one screen and pushes you an alert the moment it changes.
-
 ## Screenshots
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/home-light.png" width="100%" alt="Home screen, light theme"><br><sub><b>Home</b> · the answer first</sub></td>
-    <td align="center"><img src="docs/screenshots/home-dark.png" width="100%" alt="Home screen, dark theme"><br><sub><b>Summit dark theme</b> · 5 AM ready</sub></td>
-    <td align="center"><img src="docs/screenshots/map.png" width="100%" alt="Live map"><br><sub><b>Map</b> · routes colored by tier</sub></td>
-    <td align="center"><img src="docs/screenshots/brief.png" width="100%" alt="AI trip brief"><br><sub><b>Trip brief</b> · AI over live data</sub></td>
-    <td align="center"><img src="docs/screenshots/guide.png" width="100%" alt="Interactive guide"><br><sub><b>Guide</b> · R0 to R3 in 60 seconds</sub></td>
+    <td align="center"><img src="docs/screenshots/home-light.png" width="100%" alt="Home screen, light theme"><br><sub>Home, light theme</sub></td>
+    <td align="center"><img src="docs/screenshots/home-dark.png" width="100%" alt="Home screen, dark theme"><br><sub>Home, dark theme</sub></td>
+    <td align="center"><img src="docs/screenshots/map.png" width="100%" alt="Map"><br><sub>Map, colored by control level</sub></td>
+    <td align="center"><img src="docs/screenshots/brief.png" width="100%" alt="Trip brief"><br><sub>Trip brief</sub></td>
+    <td align="center"><img src="docs/screenshots/guide.png" width="100%" alt="Guide"><br><sub>Guide</sub></td>
   </tr>
 </table>
 
@@ -47,13 +43,13 @@ ChainCheck puts the whole picture on one screen and pushes you an alert the mome
 
 | Feature | Details |
 |---|---|
-| **The answer, first** | Your route's chain status the moment the app opens: R0 to R3 or Closed, with what that means for your exact car |
-| **A real map** | Every Sierra crossing drawn on its actual highway geometry and colored by its live control level. 80 Caltrans cameras, closures, CHP incidents, resorts, passes. Tap anything anywhere in the app to see it here |
-| **Push alerts** | Watch a route, get a notification the minute a tier changes, a closure goes up, or a storm warning lands on your pass. Nothing promotional, ever |
-| **Storm timing** | NWS pass forecasts plus hourly snow accumulation, split into "before you leave" and "while you are driving" |
-| **Resort snow** | 24 hour totals, base depth, and lifts open across 11 Tahoe resorts, with honest off-season labeling instead of fake zeros |
-| **AI trip brief** | A language model writes the summary but can only narrate verified facts. Every brief is validated: no dropped controls, no invented road states. If validation fails, a deterministic plain-text brief ships instead |
-| **Built for mountains** | Offline caching with honest "as of" timestamps, glove-sized touch targets, and a 60 second interactive guide for first-timers |
+| **Route status** | Each route's chain control level when the app opens: R0 to R3 or Closed, and what it requires for the vehicle you specify |
+| **Map** | Every Sierra crossing drawn on its highway geometry and colored by its current control level, with 80 Caltrans cameras, closures, CHP incidents, resorts, and passes. Tapping an item anywhere in the app opens it here |
+| **Push alerts** | Watch a route and get a notification when its tier changes, a closure goes up, or a storm warning lands on its pass. Alerts cover only those three events |
+| **Pass forecasts** | NWS pass forecasts and hourly snow accumulation, split into before departure and during the drive |
+| **Resort snow** | 24 hour totals, base depth, and lifts open for 11 Tahoe resorts; off-season is labeled as off-season rather than reported as zero |
+| **AI trip brief** | A language model writes the summary but can only restate verified facts. Each brief is validated for every active control and closure; if it fails validation, a deterministic plain-text brief is used instead |
+| **Offline and glove-friendly** | Cached data with "as of" timestamps, large touch targets, and a short interactive guide for first-timers |
 
 > [!IMPORTANT]
 > **The chain rules are code, not prose.** R1, R2, and R3 vehicle requirements are
@@ -124,17 +120,18 @@ flowchart LR
 
 - One shared codebase for UI, data, and logic. Android ships first; the shared
   code already declares iOS targets.
-- Two-theme design system: "Sierra Light" for daylight glare, "Summit" night
-  gradient with a glowing tier ring for storm mornings. The system theme decides.
-- Google Maps with custom cartography, tier-colored route polylines, and a quiet
-  marker language (ringed dots, tier pills, resort chips) instead of pin soup.
+- Two themes: "Sierra Light" for light mode and "Summit" for dark mode, with a
+  high-contrast tier ring. The system setting chooses between them.
+- Google Maps with a custom map style, tier-colored route polylines, and a small
+  set of custom markers (ringed dots, tier pills, resort chips) rather than
+  generic pins.
 - The freshness line shows a live pulse and relative age ("Updated 2 min ago"),
   and switches to an amber "cached" state in dead zones.
 
 </details>
 
 <details>
-<summary><b>AI safety design</b> · why the brief cannot lie</summary>
+<summary><b>AI safety design</b> · how the brief stays grounded in facts</summary>
 <br>
 
 The trip brief pipeline is fact-assembly first, narration second:
@@ -162,7 +159,7 @@ The trip brief pipeline is fact-assembly first, narration second:
 1. On your Android phone, open the [latest release](https://github.com/nicglazkov/chaincheck/releases/latest).
 2. Under **Assets**, tap the `.apk` file to download it, then open it.
 3. Android will ask you to allow installs from your browser the first time
-   (normal for apps not yet on the Play Store) — allow it, then tap **Install**.
+   (normal for apps not yet on the Play Store). Allow it, then tap **Install**.
 4. Open ChainCheck and pick your route. No account, no sign-up.
 
 Full step-by-step, iPhone status, updating, and troubleshooting:
