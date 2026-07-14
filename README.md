@@ -166,12 +166,11 @@ The trip brief pipeline is fact-assembly first, narration second:
 4. Open ChainCheck and pick your route. No account, no sign-up.
 
 Full step-by-step, iPhone status, updating, and troubleshooting:
-**[Install guide](https://nicglazkov.github.io/chaincheck/install)**.
+**[Install guide](docs/install.md)**.
 
-By installing you agree to the
-[terms of use](https://nicglazkov.github.io/chaincheck/terms). The
-[privacy policy](https://nicglazkov.github.io/chaincheck/privacy) is short:
-no accounts, no tracking, location never leaves your phone.
+By installing you agree to the [terms of use](docs/terms.md). The
+[privacy policy](docs/privacy.md) is short: no accounts, no tracking,
+location never leaves your phone.
 
 ## Run it locally
 
