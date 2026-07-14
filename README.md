@@ -6,11 +6,16 @@
   <p><b>Live chain controls, closures, pass weather, and resort snow for the Tahoe passes.</b></p>
 
   <p>
+    <a href="https://github.com/nicglazkov/chaincheck/releases/latest"><img src="https://img.shields.io/github/v/release/nicglazkov/chaincheck?color=FFC94A&label=release" alt="Latest release"></a>
     <a href="https://github.com/nicglazkov/chaincheck/actions/workflows/ci.yml"><img src="https://github.com/nicglazkov/chaincheck/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-    <a href="backend/pyproject.toml"><img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+"></a>
-    <a href="composeApp/build.gradle.kts"><img src="https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin Multiplatform"></a>
-    <a href="#tests-and-evals"><img src="https://img.shields.io/badge/Backend_tests-passing-2E7D32" alt="Backend tests passing"></a>
+    <img src="https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform: Android">
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  </p>
+
+  <p>
+    <a href="https://github.com/nicglazkov/chaincheck/releases/latest/download/chaincheck.apk"><img src="https://img.shields.io/badge/Download-Android%20APK-FFC94A?style=for-the-badge&logo=android&logoColor=black" alt="Download the Android APK"></a>
+    <img src="https://img.shields.io/badge/App%20Store-Coming%20Aug%202026-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="App Store: coming August 2026">
+    <img src="https://img.shields.io/badge/Google%20Play-Coming%20Aug%202026-414141?style=for-the-badge&logo=googleplay&logoColor=white" alt="Google Play: coming August 2026">
   </p>
 
   <p>

@@ -39,8 +39,13 @@ jobs:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew :composeApp:assembleRelease
 
-      - name: Name the artifact
-        run: cp composeApp/build/outputs/apk/release/composeApp-release.apk "chaincheck-${GITHUB_REF_NAME}.apk"
+      - name: Name the artifacts
+        run: |
+          apk=composeApp/build/outputs/apk/release/composeApp-release.apk
+          # Versioned copy for the release history, and a stable-named copy so
+          # releases/latest/download/chaincheck.apk is a permanent direct link.
+          cp "$apk" "chaincheck-${GITHUB_REF_NAME}.apk"
+          cp "$apk" "chaincheck.apk"
 
       - name: Create GitHub Release with the APK
         env:
@@ -48,5 +53,6 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" \
             "chaincheck-${GITHUB_REF_NAME}.apk" \
+            "chaincheck.apk" \
             --title "ChainCheck $GITHUB_REF_NAME" \
             --generate-notes
