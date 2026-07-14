@@ -46,5 +46,5 @@ or discontinued at any time without notice.
 
 ## Changes and contact
 
-Changes to these terms will be posted at this page. Questions:
-nic@glazkov.com or https://github.com/nicglazkov/chaincheck/issues.
+Changes to these terms will be posted at this page. Questions: open an issue
+at https://github.com/nicglazkov/chaincheck/issues.
