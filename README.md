@@ -14,6 +14,7 @@
   </p>
 
   <p>
+    <a href="#install-it"><b>Install</b></a> ·
     <a href="#screenshots">Screenshots</a> ·
     <a href="#what-it-does">Features</a> ·
     <a href="#how-it-works">Architecture</a> ·
@@ -152,18 +153,25 @@ The trip brief pipeline is fact-assembly first, narration second:
 
 ## Install it
 
-Grab `chaincheck-<version>.apk` from the
-[latest release](https://github.com/nicglazkov/chaincheck/releases/latest)
-on your Android phone, open the download, and confirm the install. Android
-will ask you to allow installs from your browser the first time; that is
-normal for apps distributed outside the Play Store. A Play Store release
-is planned for the fall.
+> [!NOTE]
+> **Google Play and the Apple App Store are coming in August 2026.** Until
+> then, Android users can install it directly in about a minute.
+
+**Android, right now:**
+
+1. On your Android phone, open the [latest release](https://github.com/nicglazkov/chaincheck/releases/latest).
+2. Under **Assets**, tap the `.apk` file to download it, then open it.
+3. Android will ask you to allow installs from your browser the first time
+   (normal for apps not yet on the Play Store) — allow it, then tap **Install**.
+4. Open ChainCheck and pick your route. No account, no sign-up.
+
+Full step-by-step, iPhone status, updating, and troubleshooting:
+**[Install guide](https://nicglazkov.github.io/chaincheck/install)**.
 
 By installing you agree to the
 [terms of use](https://nicglazkov.github.io/chaincheck/terms). The
-[privacy policy](https://nicglazkov.github.io/chaincheck/privacy) is short
-and worth the minute: no accounts, no tracking, location never leaves
-your phone.
+[privacy policy](https://nicglazkov.github.io/chaincheck/privacy) is short:
+no accounts, no tracking, location never leaves your phone.
 
 ## Run it locally
 
@@ -221,9 +229,9 @@ CI runs the backend suite, lint, and an Android build on every pull request.
 
 ## Roadmap
 
+- [ ] Google Play and Apple App Store releases (August 2026)
 - [ ] iOS build (shared code is ready, Xcode project in progress)
 - [ ] Read-only web page for sharing route status with people without the app
-- [ ] Store releases ahead of the first Sierra storms
 
 ## Data sources and thanks
 
