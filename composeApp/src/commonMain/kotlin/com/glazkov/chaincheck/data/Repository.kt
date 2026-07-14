@@ -17,7 +17,10 @@ class Repository(
     private val api: ChainCheckApi,
     private val settings: Settings,
     private val scope: CoroutineScope,
+    private val currentVersion: String = "",
 ) {
+    data class UpdateInfo(val version: String, val url: String)
+
     data class HomeState(
         val summary: Summary? = null,
         val loading: Boolean = false,
@@ -38,6 +41,11 @@ class Repository(
     private val _resorts = MutableStateFlow(ResortsState())
     val resorts: StateFlow<ResortsState> = _resorts
 
+    // Set once, on cold start, if a newer release exists and this version has
+    // not already been surfaced to the user.
+    private val _update = MutableStateFlow<UpdateInfo?>(null)
+    val update: StateFlow<UpdateInfo?> = _update
+
     val watchedCorridors: Set<String>
         get() = settings.getString(KEY_WATCHED, "").split(",").filter { it.isNotBlank() }.toSet()
 
@@ -57,6 +65,29 @@ class Repository(
         rehydrate()
         refreshHome()
         refreshResorts()
+        checkForUpdate()
+    }
+
+    /**
+     * Once per cold start: ask GitHub for the latest release and surface an
+     * update prompt if it is newer than this build. Recorded the moment it is
+     * surfaced, so the prompt appears once and only once per new version even
+     * across restarts. A newer version later will prompt again (once).
+     */
+    private fun checkForUpdate() {
+        if (currentVersion.isBlank()) return
+        scope.launch {
+            val release = UpdateChecker.latest() ?: return@launch
+            if (!isNewerVersion(release.version, currentVersion)) return@launch
+            if (settings.getStringOrNull(KEY_UPDATE_NOTIFIED) == release.version) return@launch
+            settings.putString(KEY_UPDATE_NOTIFIED, release.version)
+            _update.value = UpdateInfo(release.version, release.url)
+        }
+    }
+
+    /** Dismiss the update prompt for this session (already recorded as shown). */
+    fun dismissUpdate() {
+        _update.value = null
     }
 
     private fun rehydrate() {
@@ -131,5 +162,6 @@ class Repository(
         const val KEY_DISCLAIMER = "disclaimer.accepted"
         const val KEY_GUIDE_CARD = "guide.card.dismissed"
         const val KEY_SELECTED = "home.selected"
+        const val KEY_UPDATE_NOTIFIED = "update.notified.version"
     }
 }
