@@ -12,7 +12,7 @@ license = { text = "MIT" }
 dependencies = [
     "ca-roads-mcp @ git+https://github.com/nicglazkov/ca-roads-mcp@0b9e3a7d5f54b20a7e8cc1315fe26d80f08544c0",
     "httpx>=0.27",
-    "fastapi>=0.115",
+    "fastapi>=0.139.2",
     "uvicorn>=0.30",
     "firebase-admin>=6.5",
     "google-cloud-firestore>=2.16",
