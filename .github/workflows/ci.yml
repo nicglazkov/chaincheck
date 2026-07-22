@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# CI only reads the repo (checkout) and runs tests; no write scope needed.
+permissions:
+  contents: read
+
 jobs:
   backend:
     runs-on: ubuntu-latest
