@@ -33,3 +33,17 @@ captures/
 
 # Kotlin compiler session files
 .kotlin/
+
+# iOS / Xcode (project generated on the Mac)
+# Firebase iOS config is a secret, same as google-services.json on Android.
+GoogleService-Info.plist
+# User- and machine-specific Xcode state and build output.
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/ios/
+# Signing/config that may carry a team id or key; keep local.
+iosApp/Configuration/Config.xcconfig
+# CocoaPods (only if the Mac setup uses Pods instead of SPM).
+Pods/
+*.xcworkspace/xcuserdata/
