@@ -2,10 +2,10 @@
 
 ChainCheck is free. No account, no sign-up, no tracking.
 
-> **Coming to the app stores in August 2026.** Google Play (Android) and the
-> Apple App Store (iPhone) releases are on the way. Until then, Android users
-> can install it directly from here in about a minute. This page will get the
-> store buttons the day they go live.
+> **Available now on both platforms.** Android installs directly from here in
+> about a minute; iPhone installs through the public TestFlight beta. Google
+> Play and Apple App Store listings are coming in August 2026, and this page
+> will get the store buttons the day they go live.
 
 ## Android (available now)
 
@@ -24,16 +24,31 @@ To get alerts, open the app, tap **Alerts**, and choose the routes you want to
 watch. You will get a notification when a chain control changes, a closure goes
 up, or a storm warning lands on your pass. Nothing promotional, ever.
 
-## iPhone
+## iPhone (available now, TestFlight beta)
 
-The iPhone version arrives with the **App Store release in August 2026**.
+1. On your **iPhone**, install
+   [TestFlight](https://apps.apple.com/app/testflight/id899247664), Apple's
+   official app for beta software, if you do not have it already.
+2. Open the public beta link:
+   [testflight.apple.com/join/fAuhRHU8](https://testflight.apple.com/join/fAuhRHU8).
+3. Tap **Accept**, then **Install**. ChainCheck appears on your home screen
+   like any other app.
+
+No invite is needed; the link is open to everyone. In the current beta the
+Map tab is a placeholder and push alerts are not wired yet. Everything else
+(routes, forecasts, resorts, trip brief) works with live data. The full App
+Store release lands in August 2026.
 
 ## Updating
 
-When a new version is released, download the newer `.apk` from the
+**Android:** when a new version is released, download the newer `.apk` from the
 [releases page](https://github.com/nicglazkov/chaincheck/releases/latest) and
-open it. It installs right over the old one, keeping your settings. Once the
-app is on the stores, updates will be automatic.
+open it. It installs right over the old one, keeping your settings.
+
+**iPhone:** TestFlight updates the beta automatically (or shows an **Update**
+button inside the TestFlight app).
+
+Once the app is on the stores, updates will be automatic everywhere.
 
 ## Is it safe to install?
 

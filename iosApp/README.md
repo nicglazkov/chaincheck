@@ -1,14 +1,14 @@
 # ChainCheck for iOS
 
 This directory holds the Xcode app that wraps the shared `ComposeApp` framework.
-The Xcode project is created on a Mac (iOS builds only run on macOS with Xcode).
-Everything in the shared Kotlin module is already iOS ready, so most of the work
-here is Xcode setup plus three native integrations.
+The app ships as a public TestFlight beta:
+https://testflight.apple.com/join/fAuhRHU8 (app name "ChainCheck Tahoe",
+bundle id `com.glazkov.chaincheck`).
 
 ## Current state
 
-The shared Kotlin code compiles for iOS and runs the full app. All `expect`
-declarations have iOS `actual` implementations in `composeApp/src/iosMain/`.
+The app builds, runs, and is on TestFlight. All `expect` declarations have iOS
+`actual` implementations in `composeApp/src/iosMain/`.
 
 | Area | iOS status | File |
 |---|---|---|
@@ -58,80 +58,29 @@ than 35 days of life left, using `scripts/testflight.py` for the API steps.
 Secrets live in the GitHub repo settings (ASC key, dist cert and key, profile,
 all base64).
 
-## Step 1: create the Xcode project
+## Project layout
 
-On the Mac, create a SwiftUI app in this `iosApp/` directory (Xcode: New
-Project, iOS App, SwiftUI, bundle id `com.glazkov.chaincheck`, name ChainCheck).
-Then replace the two generated Swift files with these.
+- `project.yml` is the source of truth; `xcodegen generate` produces
+  `ChainCheck.xcodeproj` (gitignored). A pre-build script phase runs
+  `./gradlew :composeApp:embedAndSignAppleFrameworkForXcode` to compile and
+  embed the Kotlin framework.
+- `ChainCheck/iOSApp.swift` and `ChainCheck/ContentView.swift` are the whole
+  Swift host: a `UIViewControllerRepresentable` around the Kotlin
+  `MainViewController()`.
+- `ChainCheck/Info.plist` carries the Compose Multiplatform requirements:
+  `CADisableMinimumFrameDurationOnPhone` (the app aborts at launch without
+  it), all four `UISupportedInterfaceOrientations` (App Store validation
+  rejects fewer), and `ITSAppUsesNonExemptEncryption=false` so uploads need no
+  compliance question.
+- `ChainCheck/Assets.xcassets` holds the single 1024 px App Store icon,
+  rendered from the Android Summit Pin vector.
 
-`iosApp/iosApp/iOSApp.swift`:
-
-```swift
-import SwiftUI
-
-@main
-struct iOSApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView().ignoresSafeArea(.all)
-        }
-    }
-}
-```
-
-`iosApp/iosApp/ContentView.swift`:
-
-```swift
-import SwiftUI
-import ComposeApp
-
-struct ComposeView: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController {
-        // MainViewController() is a top-level Kotlin function; K/N exposes it
-        // on the file-name class MainViewControllerKt.
-        MainViewControllerKt.MainViewController()
-    }
-    func updateUIViewController(_ vc: UIViewController, context: Context) {}
-}
-
-struct ContentView: View {
-    var body: some View { ComposeView().ignoresSafeArea() }
-}
-```
-
-## Step 2: embed the shared framework
-
-Add a Run Script build phase to the app target, above "Compile Sources":
-
-```bash
-cd "$SRCROOT/.."
-./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
-```
-
-Then, in the app target build settings:
-
-- Framework Search Paths:
-  `$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)`
-- Other Linker Flags: `-framework ComposeApp`
-- User Script Sandboxing: No (the script writes into the build directory).
-
-Build for an Apple Silicon simulator. The app should launch to Home with live
-data. If the framework is not found, run
+If the framework is not found on a first build, run
 `./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64` once, then rebuild.
-
-## Step 3: Info.plist
-
-Add:
-
-- `NSLocationWhenInUseUsageDescription`: "ChainCheck uses your location to show
-  nearby chain controls and cameras on the map." (needed once the map requests
-  location).
-- Display name: ChainCheck.
-
 App Transport Security needs no exception (the backend is HTTPS). Opening Apple
 Maps via `launchNavigation` needs no URL scheme registration.
 
-## The three native integrations
+## The remaining native integrations
 
 ### 1. Map (`MapScreen.ios.kt` `PlatformMap`)
 

@@ -8,14 +8,14 @@
   <p>
     <a href="https://github.com/nicglazkov/chaincheck/releases/latest"><img src="https://img.shields.io/github/v/release/nicglazkov/chaincheck?color=FFC94A&label=release" alt="Latest release"></a>
     <a href="https://github.com/nicglazkov/chaincheck/actions/workflows/ci.yml"><img src="https://github.com/nicglazkov/chaincheck/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <img src="https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform: Android">
+    <img src="https://img.shields.io/badge/platform-Android%20%C2%B7%20iOS-3DDC84?logo=android&logoColor=white" alt="Platform: Android and iOS">
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
   </p>
 
   <p>
     <a href="https://github.com/nicglazkov/chaincheck/releases/latest/download/chaincheck.apk"><img src="https://img.shields.io/badge/Download-Android%20APK-FFC94A?style=for-the-badge&logo=android&logoColor=black" alt="Download the Android APK"></a>
-    <img src="https://img.shields.io/badge/App%20Store-Coming%20Aug%202026-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="App Store: coming August 2026">
-    <img src="https://img.shields.io/badge/Google%20Play-Coming%20Aug%202026-414141?style=for-the-badge&logo=googleplay&logoColor=white" alt="Google Play: coming August 2026">
+    <a href="https://testflight.apple.com/join/fAuhRHU8"><img src="https://img.shields.io/badge/iPhone-Join%20the%20TestFlight%20beta-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="iPhone: join the TestFlight beta"></a>
+    <img src="https://img.shields.io/badge/App%20stores-Coming%20Aug%202026-414141?style=for-the-badge&logo=googleplay&logoColor=white" alt="App Store and Google Play: coming August 2026">
   </p>
 
   <p>
@@ -82,7 +82,7 @@ flowchart LR
     end
 
     subgraph clients["Clients"]
-        APP["Compose Multiplatform app<br/>Android · iOS in progress"]
+        APP["Compose Multiplatform app<br/>Android · iOS"]
     end
 
     CT --> FEED
@@ -123,8 +123,9 @@ flowchart LR
 <summary><b>App</b> · Kotlin, Compose Multiplatform</summary>
 <br>
 
-- One shared codebase for UI, data, and logic. Android ships first; the shared
-  code already declares iOS targets.
+- One shared codebase for UI, data, and logic. Android ships as a signed APK
+  from GitHub Releases; iOS ships through the public TestFlight beta. On iOS
+  the Map tab and push alerts are still in progress.
 - Two themes: "Sierra Light" for light mode and "Summit" for dark mode, with a
   high-contrast tier ring. The system setting chooses between them.
 - Google Maps with a custom map style, tier-colored route polylines, and a small
@@ -156,10 +157,11 @@ The trip brief pipeline is fact-assembly first, narration second:
 ## Install it
 
 > [!NOTE]
-> **Google Play and the Apple App Store are coming in August 2026.** Until
-> then, Android users can install it directly in about a minute.
+> **Both platforms are available today.** Android installs as a direct APK,
+> iPhone through the public TestFlight beta. Google Play and the Apple App
+> Store listings are coming in August 2026.
 
-**Android, right now:**
+**Android:**
 
 1. On your Android phone, open the [latest release](https://github.com/nicglazkov/chaincheck/releases/latest).
 2. Under **Assets**, tap the `.apk` file to download it, then open it.
@@ -167,8 +169,18 @@ The trip brief pipeline is fact-assembly first, narration second:
    (normal for apps not yet on the Play Store). Allow it, then tap **Install**.
 4. Open ChainCheck and pick your route. No account, no sign-up.
 
-Full step-by-step, iPhone status, updating, and troubleshooting:
-**[Install guide](docs/install.md)**.
+**iPhone:**
+
+1. Install [TestFlight](https://apps.apple.com/app/testflight/id899247664)
+   from the App Store if you do not have it.
+2. Open the public beta link on your iPhone:
+   [testflight.apple.com/join/fAuhRHU8](https://testflight.apple.com/join/fAuhRHU8).
+3. Tap **Accept**, then **Install**. Updates arrive through TestFlight
+   automatically.
+
+In the current iOS beta the Map tab is a placeholder and push alerts are not
+wired yet; everything else works. Full step-by-step, updating, and
+troubleshooting: **[Install guide](docs/install.md)**.
 
 By installing you agree to the [terms of use](docs/terms.md). The
 [privacy policy](docs/privacy.md) is short: no accounts, no tracking,
@@ -230,8 +242,9 @@ CI runs the backend suite, lint, and an Android build on every pull request.
 
 ## Roadmap
 
+- [x] iOS build on public TestFlight
+- [ ] iOS map (MapKit) and push alerts
 - [ ] Google Play and Apple App Store releases (August 2026)
-- [ ] iOS build (shared code is ready, Xcode project in progress)
 - [ ] Read-only web page for sharing route status with people without the app
 
 ## Data sources and thanks
