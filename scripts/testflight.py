@@ -74,19 +74,28 @@ def check_age():
 
 def finish():
     # The upload from xcodebuild completed just before this step. Wait for the
-    # newest build to reach the processed state.
+    # uploaded build to appear and reach the processed state. ASC_EXPECTED_VERSION
+    # (the CFBundleVersion the archive was built with) guards against a race:
+    # right after upload the new build is not in the API yet, and the previous,
+    # already-VALID build would otherwise satisfy the poll.
+    expected = os.environ.get("ASC_EXPECTED_VERSION")
     build = None
-    for _ in range(60):
+    for _ in range(90):
         build = newest_build()
+        version = build["attributes"]["version"] if build else "NONE"
         state = build["attributes"]["processingState"] if build else "NONE"
-        print("processing state:", state)
-        if state == "VALID":
-            break
-        if state in ("FAILED", "INVALID"):
-            sys.exit("the build did not process")
+        if expected and version != expected:
+            print(f"newest build is {version}, waiting for {expected}")
+            build = None
+        else:
+            print("processing state:", state)
+            if state == "VALID":
+                break
+            if state in ("FAILED", "INVALID"):
+                sys.exit("the build did not process")
         time.sleep(30)
     else:
-        sys.exit("the build did not process in time")
+        sys.exit("the uploaded build did not appear and process in time")
 
     build_id = build["id"]
     # Info.plist already declares ITSAppUsesNonExemptEncryption, so the value is

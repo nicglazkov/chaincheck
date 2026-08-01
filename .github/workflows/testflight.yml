@@ -101,6 +101,7 @@ jobs:
           cd iosApp
           # The build number comes from the date, so each run makes a higher one.
           BUILD_NUMBER=$(date -u +%Y%m%d%H%M)
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
           xcodebuild -project ChainCheck.xcodeproj -scheme ChainCheck \
             -destination "generic/platform=iOS" \
             -archivePath build/ChainCheck.xcarchive archive \
@@ -146,4 +147,5 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
           ASC_GROUP_ID: ${{ secrets.ASC_GROUP_ID }}
+          ASC_EXPECTED_VERSION: ${{ env.BUILD_NUMBER }}
         run: python3 scripts/testflight.py finish
