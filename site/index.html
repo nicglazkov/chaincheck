@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChainCheck · Live chain controls and pass weather for Tahoe</title>
+<meta name="description" content="Live Caltrans chain controls, road closures, pass weather, and resort snow for the Sierra passes to Lake Tahoe. Free, no account, open source.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <img src="logo.svg" alt="">
+    <a class="name" href="./">ChainCheck</a>
+    <nav>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="support.html">Support</a>
+      <a href="https://github.com/nicglazkov/chaincheck">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="hero">
+    <img class="mark" src="logo.svg" alt="ChainCheck logo: a map pin holding a Sierra ridgeline">
+    <h1>ChainCheck</h1>
+    <p class="tagline">Live chain controls, road closures, pass weather, and
+    resort snow for the Sierra passes to Lake Tahoe.</p>
+    <div class="buttons">
+      <a class="btn primary" href="https://testflight.apple.com/join/fAuhRHU8">Get it for iPhone (TestFlight)</a>
+      <a class="btn secondary" href="https://github.com/nicglazkov/chaincheck/releases/latest/download/chaincheck.apk">Download the Android APK</a>
+    </div>
+    <p class="store-note">Free, no account, open source. App Store and Google
+    Play listings are coming in August 2026.</p>
+  </div>
+
+  <ul class="features">
+    <li><b>Route status</b>Each route's current chain control level, R0 to R3
+    or Closed, and what it requires for your vehicle.</li>
+    <li><b>Map</b>Every Sierra crossing on its real highway geometry, colored
+    by control level, with Caltrans cameras, closures, and incidents.</li>
+    <li><b>Push alerts</b>Watch a route and get a notification when its tier
+    changes, a closure goes up, or a storm warning lands on its pass.</li>
+    <li><b>Pass forecasts</b>National Weather Service forecasts and hourly
+    snow, split into before departure and during the drive.</li>
+    <li><b>Resort snow</b>24 hour totals, base depth, and lifts open for 11
+    Tahoe resorts.</li>
+    <li><b>AI trip brief</b>A short summary that can only restate verified
+    facts; anything that fails validation ships as plain text instead.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Verify before you drive.</strong> ChainCheck is not affiliated
+    with Caltrans, the CHP, the NWS, or any resort. Conditions change faster
+    than any app. Dial 511 or check
+    <a href="https://quickmap.dot.ca.gov">quickmap.dot.ca.gov</a>. Whether it
+    is safe to drive is always your decision.
+  </div>
+
+  <h2>Data sources</h2>
+  <p>Chain controls, closures, and cameras come from public
+  <a href="https://dot.ca.gov">Caltrans</a> district feeds; incidents from the
+  <a href="https://www.chp.ca.gov">CHP</a> dispatch feed; forecasts from the
+  <a href="https://www.weather.gov">National Weather Service</a> and
+  <a href="https://open-meteo.com">Open-Meteo</a>; route geometry from
+  <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+  contributors; resort conditions from each resort's public snow report.</p>
+</main>
+<footer class="site">
+  <div class="inner">
+    <nav>
+      <a href="privacy.html">Privacy policy</a>
+      <a href="terms.html">Terms of use</a>
+      <a href="support.html">Support</a>
+      <a href="https://github.com/nicglazkov/chaincheck">Source code (MIT)</a>
+    </nav>
+    <p>ChainCheck is an independent open source project and is not affiliated
+    with any government agency or resort.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy · ChainCheck</title>
+<meta name="description" content="ChainCheck privacy policy: no accounts, no tracking, location never leaves your phone.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <img src="logo.svg" alt="">
+    <a class="name" href="./">ChainCheck</a>
+    <nav>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="support.html">Support</a>
+      <a href="https://github.com/nicglazkov/chaincheck">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>Privacy policy</h1>
+  <p class="effective">Effective July 11, 2026</p>
+
+  <p>ChainCheck is a free app that shows Sierra Nevada road and weather
+  conditions. It is built to collect as close to nothing as possible.</p>
+
+  <h2>What the app collects</h2>
+  <p><strong>Nothing that identifies you.</strong> ChainCheck has no accounts,
+  no sign-in, no names, no email addresses, and no advertising.</p>
+  <p><strong>An anonymous push token, only if you use alerts.</strong> When
+  you choose to watch a route, the app stores your device's Firebase Cloud
+  Messaging token together with the route ids you picked, so the server can
+  send you that route's alerts. The token identifies an app installation, not
+  a person. It is deleted when you turn alerts off and automatically when it
+  stops working, for example after you uninstall the app.</p>
+  <p><strong>Crash reports.</strong> If the app crashes, Firebase Crashlytics
+  sends a report with the technical state of the app (stack trace, device
+  model, OS version) so the problem can be fixed. Crash reports contain no
+  personal information and no location.</p>
+
+  <h2>Location</h2>
+  <p>If you grant location access, your position is used on your device to
+  show the blue dot on the map and to hand off to your navigation app. Your
+  location is never sent to ChainCheck servers and never stored.</p>
+
+  <h2>What the app requests from servers</h2>
+  <p>The app fetches road, weather, and resort conditions from the ChainCheck
+  API. These requests are ordinary web requests; the server keeps standard
+  short-lived operational logs (such as IP addresses in request logs and
+  rate-limit counters held in memory) and no user database of any kind.
+  Webcam images load directly from Caltrans.</p>
+
+  <h2>Third parties</h2>
+  <ul>
+    <li>Google Maps renders the map on Android (Google's privacy policy
+    applies to map tiles).</li>
+    <li>Firebase Cloud Messaging delivers push alerts; Firebase Crashlytics
+    receives crash reports (Google privacy policy).</li>
+    <li>Road, weather, and resort data come from public sources (Caltrans,
+    CHP, the National Weather Service, Open-Meteo, resort websites) and are
+    fetched by the ChainCheck server, not from your device.</li>
+  </ul>
+  <p>Nothing is sold or shared with anyone for advertising or analytics.</p>
+
+  <h2>Children</h2>
+  <p>ChainCheck is a driving utility and is not directed at children.</p>
+
+  <h2>Changes and contact</h2>
+  <p>Changes to this policy will be posted at this page. Questions: open an
+  issue at
+  <a href="https://github.com/nicglazkov/chaincheck/issues">github.com/nicglazkov/chaincheck/issues</a>.</p>
+</main>
+<footer class="site">
+  <div class="inner">
+    <nav>
+      <a href="privacy.html">Privacy policy</a>
+      <a href="terms.html">Terms of use</a>
+      <a href="support.html">Support</a>
+      <a href="https://github.com/nicglazkov/chaincheck">Source code (MIT)</a>
+    </nav>
+    <p>ChainCheck is an independent open source project and is not affiliated
+    with any government agency or resort.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,5 +1,9 @@
 # ChainCheck privacy policy
 
+The published version of this policy lives at
+https://nicglazkov.github.io/chaincheck/privacy.html (source:
+`site/privacy.html`). Keep the two in sync when editing.
+
 Effective July 11, 2026.
 
 ChainCheck is a free app that shows Sierra Nevada road and weather
