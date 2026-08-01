@@ -44,6 +44,8 @@ DerivedData/
 build/ios/
 # Signing/config that may carry a team id or key; keep local.
 iosApp/Configuration/Config.xcconfig
+# The Xcode project is generated from iosApp/project.yml with xcodegen.
+iosApp/ChainCheck.xcodeproj/
 # CocoaPods (only if the Mac setup uses Pods instead of SPM).
 Pods/
 *.xcworkspace/xcuserdata/

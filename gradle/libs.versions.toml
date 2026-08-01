@@ -4,7 +4,9 @@ kotlin = "2.1.21"
 composeMultiplatform = "1.8.2"
 androidx-activity = "1.10.1"
 androidx-fragment = "1.8.6"
-coroutines = "1.11.0"
+# 1.11.0 is compiled with Kotlin 2.2.20 and its iOS klibs are ABI-incompatible
+# with Kotlin 2.1.21; stay on 1.10.2 until the Kotlin/CMP pair moves to 2.2.x.
+coroutines = "1.10.2"
 serialization = "1.8.1"
 datetime = "0.6.2"
 ktor = "3.1.3"

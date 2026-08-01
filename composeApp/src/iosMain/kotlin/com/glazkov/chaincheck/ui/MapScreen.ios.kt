@@ -15,6 +15,8 @@ import platform.UIKit.UIApplication
 @Composable
 actual fun PlatformMap(
     data: MapData,
+    focus: MapFocus?,
+    layers: MapLayers,
     onWebcamTap: (MapWebcam) -> Unit,
     onNavigateTo: (lat: Double, lon: Double, label: String) -> Unit,
     modifier: Modifier,
