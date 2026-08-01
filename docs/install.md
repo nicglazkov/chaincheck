@@ -58,7 +58,9 @@ Once the app is on the stores, updates will be automatic everywhere.
   map and never leaves your device.
 - Every release APK is **signed** and **built automatically** from this
   repository, so the file you download is exactly what the code produces.
-- The short version: [privacy policy](privacy.md) · [terms of use](terms.md).
+- The short version:
+  [privacy policy](https://nicglazkov.github.io/chaincheck/privacy.html) ·
+  [terms of use](https://nicglazkov.github.io/chaincheck/terms.html).
 
 ## Trouble installing?
 

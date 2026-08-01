@@ -182,9 +182,10 @@ In the current iOS beta the Map tab is a placeholder and push alerts are not
 wired yet; everything else works. Full step-by-step, updating, and
 troubleshooting: **[Install guide](docs/install.md)**.
 
-By installing you agree to the [terms of use](docs/terms.md). The
-[privacy policy](docs/privacy.md) is short: no accounts, no tracking,
-location never leaves your phone.
+By installing you agree to the
+[terms of use](https://nicglazkov.github.io/chaincheck/terms.html). The
+[privacy policy](https://nicglazkov.github.io/chaincheck/privacy.html) is
+short: no accounts, no tracking, location never leaves your phone.
 
 ## Run it locally
 

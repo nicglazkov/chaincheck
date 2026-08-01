@@ -1,5 +1,9 @@
 # ChainCheck terms of use
 
+The published version of these terms lives at
+https://nicglazkov.github.io/chaincheck/terms.html (source:
+`site/terms.html`). Keep the two in sync when editing.
+
 Effective July 11, 2026.
 
 By installing or using ChainCheck you agree to these terms.
