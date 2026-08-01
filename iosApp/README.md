@@ -20,7 +20,7 @@ declarations have iOS `actual` implementations in `composeApp/src/iosMain/`.
 | Map view | Placeholder text | `iosMain/.../ui/MapScreen.ios.kt` |
 | Push token (FCM) | Stub returns `null` | `iosMain/.../push/PushToken.ios.kt` |
 | App Check token | Stub returns `null` | `iosMain/.../data/AppCheck.ios.kt` |
-| Xcode project | Not created yet | this directory |
+| Xcode project | Done, generated with xcodegen | `project.yml` |
 
 What this means: once the Xcode project embeds the framework, the app launches
 and Home, Routes, Resorts, Trip brief, and Alerts all work against the live
@@ -38,6 +38,25 @@ enforcement is off (monitoring only); wire it when enforcement flips in October.
 - Backend base URL is baked in as the default in
   `composeApp/src/commonMain/.../data/Api.kt` and is public. No per-platform
   backend work is needed; the JSON API is client agnostic.
+
+## Build and release
+
+The Xcode project is generated, not committed. To build locally:
+
+```bash
+brew install xcodegen   # once
+cd iosApp && xcodegen generate
+xcodebuild -project ChainCheck.xcodeproj -scheme ChainCheck \
+  -destination "generic/platform=iOS Simulator" build
+```
+
+Release signing is manual: an Apple Distribution certificate plus the
+"ChainCheck AppStore" provisioning profile, both created through the App Store
+Connect API. The scheduled workflow `.github/workflows/testflight.yml`
+re-archives and re-uploads a TestFlight build when the newest one has less
+than 35 days of life left, using `scripts/testflight.py` for the API steps.
+Secrets live in the GitHub repo settings (ASC key, dist cert and key, profile,
+all base64).
 
 ## Step 1: create the Xcode project
 
