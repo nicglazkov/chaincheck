@@ -10,7 +10,9 @@ Sierra passes to Lake Tahoe, with push alerts and an AI trip brief.
   JSON API. Reuses the `ca_roads` feed layer. Firestore for subscriptions, FCM
   for push, Cloud Scheduler drives a 2-minute poll. Lives in `backend/`.
 - **App**: Kotlin Compose Multiplatform. Android ships from GitHub Releases as a
-  sideload APK; iOS is in progress. One shared module in `composeApp/`:
+  sideload APK; iOS ships through the public TestFlight beta
+  (https://testflight.apple.com/join/fAuhRHU8). One shared module in
+  `composeApp/`:
   - `src/commonMain` shared UI, data, and logic.
   - `src/androidMain` and `src/iosMain` platform actuals (`expect`/`actual`).
   - `iosApp/` holds the Xcode app (created on a Mac). See `iosApp/README.md`.
@@ -52,7 +54,9 @@ CI runs the backend suite, lint, and an Android build on every pull request.
 
 ## Status
 
-Android v0.1.2 is published. The backend is production hardened (deny-all
-Firestore, token-gated internal endpoints, rate/size/SSRF guards) and runs
-unattended. Next up: the iOS build (`iosApp/README.md`), then App Store and
-Google Play at the October/store-prep stage.
+Android v0.1.2 is published. iOS is live on public TestFlight; the scheduled
+workflow `.github/workflows/testflight.yml` keeps the build fresh
+automatically. The backend is production hardened (deny-all Firestore,
+token-gated internal endpoints, rate/size/SSRF guards) and runs unattended.
+Next up: the iOS map (MapKit) and push wiring (`iosApp/README.md`), then App
+Store and Google Play at the store-prep stage.
