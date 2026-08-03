@@ -16,7 +16,7 @@ dependencies = [
     "uvicorn>=0.30",
     "firebase-admin>=6.5",
     "google-cloud-firestore>=2.16",
-    "anthropic>=0.120.0",
+    "anthropic>=0.120.2",
     "tzdata; sys_platform == 'win32'",
 ]
 
