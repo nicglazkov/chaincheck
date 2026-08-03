@@ -57,7 +57,7 @@ jobs:
 
       - name: Set up Gradle
         if: env.SKIP != 'true'
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6.2.0
 
       - name: Select the newest Xcode 26
         if: env.SKIP != 'true'
