@@ -15,7 +15,7 @@
   <p>
     <a href="https://github.com/nicglazkov/chaincheck/releases/latest/download/chaincheck.apk"><img src="https://img.shields.io/badge/Download-Android%20APK-FFC94A?style=for-the-badge&logo=android&logoColor=black" alt="Download the Android APK"></a>
     <a href="https://testflight.apple.com/join/fAuhRHU8"><img src="https://img.shields.io/badge/iPhone-Join%20the%20TestFlight%20beta-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="iPhone: join the TestFlight beta"></a>
-    <img src="https://img.shields.io/badge/App%20stores-Coming%20Aug%202026-414141?style=for-the-badge&logo=googleplay&logoColor=white" alt="App Store and Google Play: coming August 2026">
+    <img src="https://img.shields.io/badge/App%20stores-Planned-414141?style=for-the-badge&logo=googleplay&logoColor=white" alt="App Store and Google Play: planned">
   </p>
 
   <p>
@@ -159,7 +159,7 @@ The trip brief pipeline is fact-assembly first, narration second:
 > [!NOTE]
 > **Both platforms are available today.** Android installs as a direct APK,
 > iPhone through the public TestFlight beta. Google Play and the Apple App
-> Store listings are coming in August 2026.
+> Store listings are planned; these are the install channels for now.
 
 **Android:**
 
@@ -245,7 +245,7 @@ CI runs the backend suite, lint, and an Android build on every pull request.
 
 - [x] iOS build on public TestFlight
 - [ ] iOS map (MapKit) and push alerts
-- [ ] Google Play and Apple App Store releases (August 2026)
+- [ ] Google Play and Apple App Store releases
 - [ ] Read-only web page for sharing route status with people without the app
 
 ## Data sources and thanks
