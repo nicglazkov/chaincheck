@@ -7,8 +7,9 @@ Sierra passes to Lake Tahoe, with push alerts and an AI trip brief.
 
 - **Backend**: Python 3.12 / FastAPI on Google Cloud Run (project
   `chaincheck-app`, region us-west1, service `chaincheck-api`). Public, keyless
-  JSON API. Reuses the `ca_roads` feed layer. Firestore for subscriptions, FCM
-  for push, Cloud Scheduler drives a 2-minute poll. Lives in `backend/`.
+  JSON API. Reuses the `ca_roads` feed layer from commutescout. Firestore for
+  subscriptions, FCM for push, Cloud Scheduler drives a 2-minute poll. Lives in
+  `backend/`.
 - **App**: Kotlin Compose Multiplatform. Android ships from GitHub Releases as a
   sideload APK; iOS ships through the public TestFlight beta
   (https://testflight.apple.com/join/fAuhRHU8). One shared module in
