@@ -102,10 +102,10 @@ flowchart LR
 <summary><b>Backend</b> · Python 3.12, FastAPI, Cloud Run</summary>
 <br>
 
-- Road data comes from the [ca_roads](https://github.com/nicglazkov/ca-roads-mcp)
-  feed layer, which parses the public Caltrans and CHP feeds with per-district
-  caching, conditional GETs, and stale-serve so a flaky feed degrades instead of
-  disappearing.
+- Road data comes from the `ca_roads` feed layer in
+  [commutescout](https://github.com/nicglazkov/commutescout), which parses the
+  public Caltrans and CHP feeds with per-district caching, conditional GETs, and
+  stale-serve so a flaky feed degrades instead of disappearing.
 - Forecasts come from api.weather.gov and Open-Meteo. Both free, no keys.
 - Resort conditions come from public JSON feeds where resorts have them and light
   per-resort scrapers where they do not. Each adapter fails alone, can be disabled
