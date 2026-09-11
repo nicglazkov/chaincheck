@@ -1,9 +1,10 @@
 # chaincheck-backend
 
 The ChainCheck API service. Sierra chain controls, closures, and incidents
-(via the shared `ca_roads` feed layer), NWS pass forecasts, Open-Meteo snow
-accumulation, and the tier-change watcher, behind one client-agnostic JSON
-API.
+(via the shared `ca_roads` feed layer in
+[commutescout](https://github.com/nicglazkov/commutescout)), NWS pass
+forecasts, Open-Meteo snow accumulation, and the tier-change watcher, behind
+one client-agnostic JSON API.
 
 Run locally:
 

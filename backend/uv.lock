@@ -72,7 +72,7 @@ wheels = [
 [[package]]
 name = "ca-roads-mcp"
 version = "1.4.0"
-source = { git = "https://github.com/nicglazkov/ca-roads-mcp?rev=0b9e3a7d5f54b20a7e8cc1315fe26d80f08544c0#0b9e3a7d5f54b20a7e8cc1315fe26d80f08544c0" }
+source = { git = "https://github.com/nicglazkov/commutescout?rev=0b9e3a7d5f54b20a7e8cc1315fe26d80f08544c0#0b9e3a7d5f54b20a7e8cc1315fe26d80f08544c0" }
 dependencies = [
     { name = "httpx" },
     { name = "mcp" },
@@ -212,7 +212,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.122.0" },
-    { name = "ca-roads-mcp", git = "https://github.com/nicglazkov/ca-roads-mcp?rev=0b9e3a7d5f54b20a7e8cc1315fe26d80f08544c0" },
+    { name = "ca-roads-mcp", git = "https://github.com/nicglazkov/commutescout?rev=0b9e3a7d5f54b20a7e8cc1315fe26d80f08544c0" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "firebase-admin", specifier = ">=6.5" },
     { name = "google-cloud-firestore", specifier = ">=2.28.1" },
