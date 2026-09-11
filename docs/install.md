@@ -4,8 +4,8 @@ ChainCheck is free. No account, no sign-up, no tracking.
 
 > **Available now on both platforms.** Android installs directly from here in
 > about a minute; iPhone installs through the public TestFlight beta. Google
-> Play and Apple App Store listings are coming in August 2026, and this page
-> will get the store buttons the day they go live.
+> Play and Apple App Store listings are planned; these are the install
+> channels for now.
 
 ## Android (available now)
 
@@ -36,8 +36,8 @@ up, or a storm warning lands on your pass. Nothing promotional, ever.
 
 No invite is needed; the link is open to everyone. In the current beta the
 Map tab is a placeholder and push alerts are not wired yet. Everything else
-(routes, forecasts, resorts, trip brief) works with live data. The full App
-Store release lands in August 2026.
+(routes, forecasts, resorts, trip brief) works with live data. A full App
+Store release is planned.
 
 ## Updating
 
