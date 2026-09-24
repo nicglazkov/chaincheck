@@ -20,7 +20,7 @@ jobs:
   refresh:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install the API key
         env:
@@ -50,7 +50,7 @@ jobs:
 
       - name: Set up JDK 17
         if: env.SKIP != 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
