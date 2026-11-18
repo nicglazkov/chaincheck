@@ -5,78 +5,162 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ChainCheck · Live chain controls and pass weather for Tahoe</title>
 <meta name="description" content="Live Caltrans chain controls, road closures, pass weather, and resort snow for the Sierra passes to Lake Tahoe. Free, no account, open source.">
+<link rel="canonical" href="https://nicglazkov.github.io/chaincheck/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ChainCheck">
+<meta property="og:url" content="https://nicglazkov.github.io/chaincheck/">
+<meta property="og:title" content="ChainCheck · Live chain controls and pass weather for Tahoe">
+<meta property="og:description" content="Live Caltrans chain controls, road closures, pass weather, and resort snow for the Sierra passes to Lake Tahoe. Free, no account, open source.">
+<meta property="og:image" content="https://nicglazkov.github.io/chaincheck/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="ChainCheck: live chain controls, closures, pass weather and resort snow for the Sierra passes to Lake Tahoe.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ChainCheck · Live chain controls and pass weather for Tahoe">
+<meta name="twitter:description" content="Live Caltrans chain controls, road closures, pass weather, and resort snow for the Sierra passes to Lake Tahoe. Free, no account, open source.">
+<meta name="twitter:image" content="https://nicglazkov.github.io/chaincheck/social-preview.png">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
+<meta name="theme-color" content="#f4f3ef">
+<script>
+/* Theme: Day Drive (light) for everyone; Night Drive only when the visitor
+   picks it with the sun/moon button. Runs before first paint, so no flash. */
+(function () {
+  var d = document.documentElement, key = "nd-theme";
+  function set(t, save) {
+    if (t === "dark") d.setAttribute("data-theme", "dark"); else d.removeAttribute("data-theme");
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (!m) { m = document.createElement("meta"); m.name = "theme-color"; document.head.appendChild(m); }
+    m.setAttribute("content", t === "dark" ? "#0a0d16" : "#f4f3ef");
+    if (save) { try { localStorage.setItem(key, t); } catch (e) {} }
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(key); } catch (e) {}
+  set(saved === "dark" ? "dark" : "light");
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest && e.target.closest(".nd-theme");
+    if (b) set(d.getAttribute("data-theme") === "dark" ? "light" : "dark", true);
+  });
+})();
+</script>
+<link rel="preload" href="fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="site">
-  <div class="inner">
-    <img src="logo.svg" alt="">
-    <a class="name" href="./">ChainCheck</a>
-    <nav>
-      <a href="privacy.html">Privacy</a>
-      <a href="terms.html">Terms</a>
-      <a href="support.html">Support</a>
-      <a href="https://github.com/nicglazkov/chaincheck">GitHub</a>
+<header class="nd-nav">
+  <div class="nd-wrap nd-nav__in">
+    <a class="nd-brand" href="./"><img src="logo.svg" alt="" width="28" height="28">ChainCheck</a>
+    <nav class="nd-links" aria-label="Primary">
+      <a class="nd-hide" href="privacy.html">Privacy</a>
+      <a class="nd-hide" href="terms.html">Terms</a>
+      <a class="nd-hide" href="support.html">Support</a>
+      <a class="nd-hide" href="https://github.com/nicglazkov/chaincheck">GitHub</a>
+      <button class="nd-theme" type="button" aria-label="Switch between light and dark theme" title="Light or dark theme"><svg class="nd-theme__moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="nd-theme__sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg></button>
+      <a class="nd-btn nd-btn--sm" href="./#get">Get the app</a>
     </nav>
   </div>
 </header>
 <main>
-  <div class="hero">
-    <img class="mark" src="logo.svg" alt="ChainCheck logo: a map pin holding a Sierra ridgeline">
-    <h1>ChainCheck</h1>
-    <p class="tagline">Live chain controls, road closures, pass weather, and
-    resort snow for the Sierra passes to Lake Tahoe.</p>
-    <div class="buttons">
-      <a class="btn primary" href="https://testflight.apple.com/join/fAuhRHU8">Get it for iPhone (TestFlight)</a>
-      <a class="btn secondary" href="https://github.com/nicglazkov/chaincheck/releases/latest/download/chaincheck.apk">Download the Android APK</a>
+  <section class="hero nd-hero" id="get">
+    <div class="nd-streak" aria-hidden="true"></div>
+    <div class="nd-wrap hero__grid">
+      <div>
+        <img class="hero__mark" src="logo.svg" alt="ChainCheck logo: a map pin holding a Sierra ridgeline" width="64" height="64">
+        <p class="nd-eyebrow">Sierra passes to Lake Tahoe</p>
+        <h1>ChainCheck</h1>
+        <p class="tagline">Live chain controls, road closures, pass weather, and
+        resort snow for the Sierra passes to Lake Tahoe.</p>
+        <div class="nd-actions">
+          <a class="nd-btn" href="https://testflight.apple.com/join/fAuhRHU8"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.6zM14.1 5.6c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3z"/></svg>Get it for iPhone (TestFlight)</a>
+          <a class="nd-btn nd-btn--ghost" href="https://github.com/nicglazkov/chaincheck/releases/latest/download/chaincheck.apk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>Download the Android APK</a>
+        </div>
+        <p class="store-note">Free, no account, open source. App Store and Google
+        Play listings are planned.</p>
+        <ul class="levels" aria-label="Chain control levels the app shows">
+          <li class="r0">R0</li><li class="r1">R1</li><li class="r2">R2</li><li class="r3">R3</li><li class="rc">Closed</li>
+        </ul>
+      </div>
+      <div class="phones">
+        <div class="phone phone--front"><img class="nd-day" src="img/home-light.png" width="400" height="814" alt="The ChainCheck home screen: I-80 Donner Summit at R0, no chain controls, with the summit forecast below."><img class="nd-night" src="img/home-dark.png" loading="lazy" width="400" height="814" alt="The ChainCheck home screen: I-80 Donner Summit at R0, no chain controls, with the summit forecast below."></div>
+        <div class="phone phone--back"><img src="img/map.png" width="400" height="814" loading="lazy" alt="The ChainCheck map: I-80, US-50 and SR-88 colored by control level, with resorts and summit elevations."></div>
+      </div>
     </div>
-    <p class="store-note">Free, no account, open source. App Store and Google
-    Play listings are planned.</p>
-  </div>
+  </section>
 
-  <ul class="features">
-    <li><b>Route status</b>Each route's current chain control level, R0 to R3
-    or Closed, and what it requires for your vehicle.</li>
-    <li><b>Map</b>Every Sierra crossing on its real highway geometry, colored
-    by control level, with Caltrans cameras, closures, and incidents.</li>
-    <li><b>Push alerts</b>Watch a route and get a notification when its tier
-    changes, a closure goes up, or a storm warning lands on its pass.</li>
-    <li><b>Pass forecasts</b>National Weather Service forecasts and hourly
-    snow, split into before departure and during the drive.</li>
-    <li><b>Resort snow</b>24 hour totals, base depth, and lifts open for 11
-    Tahoe resorts.</li>
-    <li><b>AI trip brief</b>A short summary that can only restate verified
-    facts; anything that fails validation ships as plain text instead.</li>
-  </ul>
-
-  <div class="callout">
+  <section class="nd-section">
+    <div class="nd-wrap">
+      <div class="nd-section__head">
+        <p class="nd-eyebrow">What it shows</p>
+        <h2>Everything you check before a Tahoe drive, in one app.</h2>
+      </div>
+      <ul class="features">
+        <li><b>Route status</b>Each route's current chain control level, R0 to R3
+        or Closed, and what it requires for your vehicle.</li>
+        <li><b>Map</b>Every Sierra crossing on its real highway geometry, colored
+        by control level, with Caltrans cameras, closures, and incidents.</li>
+        <li><b>Push alerts</b>Watch a route and get a notification when its tier
+        changes, a closure goes up, or a storm warning lands on its pass.</li>
+        <li><b>Pass forecasts</b>National Weather Service forecasts and hourly
+        snow, split into before departure and during the drive.</li>
+        <li><b>Resort snow</b>24 hour totals, base depth, and lifts open for 11
+        Tahoe resorts.</li>
+        <li><b>AI trip brief</b>A short summary that can only restate verified
+        facts; anything that fails validation ships as plain text instead.</li>
+  
+      </ul>
+      <div class="callout">
     <strong>Verify before you drive.</strong> ChainCheck is not affiliated
     with Caltrans, the CHP, the NWS, or any resort. Conditions change faster
     than any app. Dial 511 or check
     <a href="https://quickmap.dot.ca.gov">quickmap.dot.ca.gov</a>. Whether it
     is safe to drive is always your decision.
   </div>
+    </div>
+  </section>
 
-  <h2>Data sources</h2>
-  <p>Chain controls, closures, and cameras come from public
+  <section class="nd-section">
+    <div class="nd-wrap split">
+      <div>
+        <p class="nd-eyebrow">Where the data comes from</p>
+        <h2>Data sources</h2>
+      </div>
+      <p>Chain controls, closures, and cameras come from public
   <a href="https://dot.ca.gov">Caltrans</a> district feeds; incidents from the
   <a href="https://www.chp.ca.gov">CHP</a> dispatch feed; forecasts from the
   <a href="https://www.weather.gov">National Weather Service</a> and
   <a href="https://open-meteo.com">Open-Meteo</a>; route geometry from
   <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
   contributors; resort conditions from each resort's public snow report.</p>
+    </div>
+  </section>
 </main>
-<footer class="site">
-  <div class="inner">
-    <nav>
-      <a href="privacy.html">Privacy policy</a>
-      <a href="terms.html">Terms of use</a>
-      <a href="support.html">Support</a>
-      <a href="https://github.com/nicglazkov/chaincheck">Source code (MIT)</a>
-    </nav>
-    <p>ChainCheck is an independent open source project and is not affiliated
+<footer class="nd-foot">
+  <div class="nd-wrap">
+    <div class="nd-foot__top">
+      <a class="nd-brand" href="./"><img src="logo.svg" alt="" width="28" height="28">ChainCheck</a>
+      <nav class="nd-foot__links" aria-label="Project">
+        <a href="privacy.html">Privacy policy</a>
+        <a href="terms.html">Terms of use</a>
+        <a href="support.html">Support</a>
+        <a href="https://github.com/nicglazkov/chaincheck">Source code (MIT)</a>
+      </nav>
+    </div>
+    <p class="nd-foot__note">ChainCheck is an independent open source project and is not affiliated
     with any government agency or resort.</p>
+    <div class="nd-more">
+      <div class="nd-more__head">
+        <p class="nd-eyebrow">More from Nic</p>
+        <a class="nd-more__all" href="https://nicglazkov.github.io/">All projects &rarr;</a>
+      </div>
+      <ul>
+        <li><a class="nd-more__item" href="https://commutescout.com"><b>CommuteScout</b><span>Live road conditions and the best time to leave</span></a></li>
+        <li><a class="nd-more__item" href="./" aria-current="page"><b>ChainCheck</b><span>Sierra chain controls and pass weather</span></a></li>
+        <li><a class="nd-more__item" href="https://nicglazkov.github.io/highway-radar-sabre-plus/"><b>SABRE Plus</b><span>California road alerts for Highway Radar</span></a></li>
+        <li><a class="nd-more__item" href="https://nicglazkov.github.io/outagewatch/"><b>OutageWatch</b><span>PG&amp;E power outage alerts</span></a></li>
+        <li><a class="nd-more__item" href="https://getfiberwatch.com"><b>FiberWatch</b><span>Know when fiber reaches your address</span></a></li>
+        <li><a class="nd-more__item" href="https://nicglazkov.github.io/switchboard/"><b>Switchboard</b><span>Claude Code chats on all your computers</span></a></li>
+        <li><a class="nd-more__item" href="https://chalkboard.studio"><b>Chalkboard</b><span>Turn a topic into a narrated explainer video</span></a></li>
+      </ul>
+    </div>
   </div>
 </footer>
 </body>
